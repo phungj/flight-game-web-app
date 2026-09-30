@@ -6,24 +6,36 @@ import * as THREE from "three";
 import { Aircraft } from "@/src/engine/aircraft";
 import { Controls } from "@/src/engine/controls";
 import { Missile } from "@/src/engine/missile";
+import { Explosion } from "@/src/engine/explosion";
+import { GunProjectile } from "@/src/engine/gunProjectile";
 
 export default function Home() {
-    const containerRef = useRef<HTMLDivElement>(null);
-    const debugRef = useRef<HTMLDivElement>(null);
-    const hudRef = useRef<HTMLDivElement>(null);
+    const containerRef =
+        useRef<HTMLDivElement>(null);
+
+    const debugRef =
+        useRef<HTMLDivElement>(null);
+
+    const hudRef =
+        useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        const container = containerRef.current;
+        const container =
+            containerRef.current;
+
         if (!container) return;
 
         // --------------------------------------------------
         // Scene
         // --------------------------------------------------
 
-        const scene = new THREE.Scene();
+        const scene =
+            new THREE.Scene();
 
         scene.background =
-            new THREE.Color(0x87ceeb);
+            new THREE.Color(
+                0x87ceeb
+            );
 
         // --------------------------------------------------
         // Camera
@@ -72,7 +84,9 @@ export default function Home() {
             100
         );
 
-        scene.add(sunlight);
+        scene.add(
+            sunlight
+        );
 
         scene.add(
             new THREE.AmbientLight(
@@ -99,10 +113,12 @@ export default function Home() {
         ground.rotation.x =
             -Math.PI / 2;
 
-        scene.add(ground);
+        scene.add(
+            ground
+        );
 
         // --------------------------------------------------
-        // Simulation
+        // Player
         // --------------------------------------------------
 
         const player =
@@ -112,15 +128,11 @@ export default function Home() {
             new Controls();
 
         // --------------------------------------------------
-        // Aircraft render object
+        // Player aircraft render object
         // --------------------------------------------------
 
         const aircraft =
             new THREE.Group();
-
-        // --------------------------------------------------
-        // Fuselage
-        // --------------------------------------------------
 
         const fuselage =
             new THREE.Mesh(
@@ -140,11 +152,9 @@ export default function Home() {
         fuselage.position.z =
             -0.5;
 
-        aircraft.add(fuselage);
-
-        // --------------------------------------------------
-        // Main wings
-        // --------------------------------------------------
+        aircraft.add(
+            fuselage
+        );
 
         const wingGeometry =
             new THREE.BoxGeometry(
@@ -167,11 +177,9 @@ export default function Home() {
         wings.position.z =
             0.5;
 
-        aircraft.add(wings);
-
-        // --------------------------------------------------
-        // Horizontal tail
-        // --------------------------------------------------
+        aircraft.add(
+            wings
+        );
 
         const tail =
             new THREE.Mesh(
@@ -186,11 +194,9 @@ export default function Home() {
         tail.position.z =
             1.8;
 
-        aircraft.add(tail);
-
-        // --------------------------------------------------
-        // Vertical tail
-        // --------------------------------------------------
+        aircraft.add(
+            tail
+        );
 
         const verticalTail =
             new THREE.Mesh(
@@ -212,7 +218,9 @@ export default function Home() {
             verticalTail
         );
 
-        scene.add(aircraft);
+        scene.add(
+            aircraft
+        );
 
         // --------------------------------------------------
         // Aircraft axes
@@ -221,7 +229,9 @@ export default function Home() {
         const axes =
             new THREE.AxesHelper(5);
 
-        aircraft.add(axes);
+        aircraft.add(
+            axes
+        );
 
         // --------------------------------------------------
         // Velocity arrow
@@ -243,28 +253,40 @@ export default function Home() {
         );
 
         // --------------------------------------------------
-        // Enemy
+        // Fighter
         // --------------------------------------------------
 
-        const enemy = {
-            position: new THREE.Vector3(
+        const enemy =
+            new Aircraft();
+
+        enemy.position.set(
+            0,
+            300,
+            -1400
+        );
+
+        enemy.quaternion.setFromEuler(
+            new THREE.Euler(
                 0,
-                300,
-                -800
-            ),
+                Math.PI,
+                0,
+                "YXZ"
+            )
+        );
 
-            quaternion:
-                new THREE.Quaternion(),
+        enemy.speed = 150;
+        enemy.throttle = 0.5;
 
-            alive: true,
+        let enemyAlive = true;
+        let enemyHealth = 100;
 
-            angle: 0,
-        };
+        // --------------------------------------------------
+        // Fighter render object
+        // --------------------------------------------------
 
         const enemyGroup =
             new THREE.Group();
 
-        // Enemy fuselage
         const enemyFuselage =
             new THREE.Mesh(
                 new THREE.ConeGeometry(
@@ -287,7 +309,6 @@ export default function Home() {
             enemyFuselage
         );
 
-        // Enemy wings
         const enemyWings =
             new THREE.Mesh(
                 new THREE.BoxGeometry(
@@ -307,7 +328,187 @@ export default function Home() {
             enemyWings
         );
 
-        scene.add(enemyGroup);
+        scene.add(
+            enemyGroup
+        );
+
+        // --------------------------------------------------
+        // Bomber
+        // --------------------------------------------------
+
+        const bomber =
+            new Aircraft();
+
+        bomber.position.set(
+            0,
+            150,
+            -1200
+        );
+
+        bomber.quaternion.setFromEuler(
+            new THREE.Euler(
+                0,
+                0,
+                0,
+                "YXZ"
+            )
+        );
+
+        bomber.speed = 75;
+        bomber.throttle = 0;
+
+        let bomberAlive = true;
+        let bomberHealth = 200;
+
+        // --------------------------------------------------
+        // Bomber render object
+        // --------------------------------------------------
+
+        const bomberGroup =
+            new THREE.Group();
+
+        const bomberMaterial =
+            new THREE.MeshStandardMaterial({
+                color: 0xff4444,
+            });
+
+        const bomberBody =
+            new THREE.Mesh(
+                new THREE.BoxGeometry(
+                    3,
+                    2,
+                    10
+                ),
+                bomberMaterial
+            );
+
+        bomberGroup.add(
+            bomberBody
+        );
+
+        const bomberWings =
+            new THREE.Mesh(
+                new THREE.BoxGeometry(
+                    18,
+                    0.4,
+                    3
+                ),
+                new THREE.MeshStandardMaterial({
+                    color: 0xcc2222,
+                })
+            );
+
+        bomberGroup.add(
+            bomberWings
+        );
+
+        const bomberTail =
+            new THREE.Mesh(
+                new THREE.BoxGeometry(
+                    5,
+                    2,
+                    2
+                ),
+                new THREE.MeshStandardMaterial({
+                    color: 0xcc2222,
+                })
+            );
+
+        bomberTail.position.z =
+            4;
+
+        bomberGroup.add(
+            bomberTail
+        );
+
+        scene.add(
+            bomberGroup
+        );
+
+        // --------------------------------------------------
+        // Target selection
+        // --------------------------------------------------
+
+        type Target = {
+            aircraft: Aircraft;
+            name: string;
+            group: THREE.Group;
+            getAlive: () => boolean;
+        };
+
+        const targets: Target[] = [
+            {
+                aircraft: enemy,
+                name: "FIGHTER",
+                group: enemyGroup,
+                getAlive: () =>
+                    enemyAlive,
+            },
+            {
+                aircraft: bomber,
+                name: "BOMBER",
+                group: bomberGroup,
+                getAlive: () =>
+                    bomberAlive,
+            },
+        ];
+
+        let targetIndex = 0;
+
+        let target =
+            targets[targetIndex];
+
+        let locked = false;
+
+        const lockRange = 1000;
+
+        const lockAngle =
+            THREE.MathUtils.degToRad(
+                18
+            );
+
+        // --------------------------------------------------
+        // Target switching
+        // --------------------------------------------------
+
+        function selectNextTarget() {
+            for (
+                let i = 1;
+                i <= targets.length;
+                i++
+            ) {
+                const nextIndex =
+                    (
+                        targetIndex + i
+                    ) %
+                    targets.length;
+
+                if (
+                    targets[nextIndex]
+                        .getAlive()
+                ) {
+                    targetIndex =
+                        nextIndex;
+
+                    target =
+                        targets[targetIndex];
+
+                    locked = false;
+
+                    return;
+                }
+            }
+        }
+
+        function ensureValidTarget() {
+            if (
+                target.getAlive()
+            ) {
+                return;
+            }
+
+            selectNextTarget();
+        }
 
         // --------------------------------------------------
         // Missiles
@@ -317,6 +518,9 @@ export default function Home() {
 
         const missileMeshes:
             THREE.Mesh[] = [];
+
+        const missileTrails:
+            THREE.Mesh[][] = [];
 
         const missileGeometry =
             new THREE.CapsuleGeometry(
@@ -328,28 +532,365 @@ export default function Home() {
 
         const missileMaterial =
             new THREE.MeshStandardMaterial({
-                color: 0xffffff,
+                color: 0xeeeeee,
             });
 
         // --------------------------------------------------
-        // Lock-on
+        // Missile trail
         // --------------------------------------------------
 
-        let locked = false;
+        const trailParticleGeometry =
+            new THREE.SphereGeometry(
+                0.35,
+                8,
+                8
+            );
 
-        const lockRange = 1000;
+        const trailParticleMaterial =
+            new THREE.MeshBasicMaterial({
+                color: 0xffffff,
+                transparent: true,
+                opacity: 0.8,
+            });
 
-        const lockAngle =
-            THREE.MathUtils.degToRad(18);
+        // --------------------------------------------------
+        // Gun
+        // --------------------------------------------------
+
+        const projectiles:
+            GunProjectile[] = [];
+
+        const projectileMeshes:
+            THREE.Mesh[] = [];
+
+        const projectileGeometry =
+            new THREE.SphereGeometry(
+                0.3,
+                6,
+                6
+            );
+
+        const projectileMaterial =
+            new THREE.MeshBasicMaterial({
+                color: 0xffffaa,
+            });
+
+        const gunFireRate = 15;
+        const gunMuzzleSpeed = 500;
+
+        let gunFiring = false;
+        let gunCooldown = 0;
+
+        // --------------------------------------------------
+        // Explosions
+        // --------------------------------------------------
+
+        const explosions:
+            Explosion[] = [];
+
+        // --------------------------------------------------
+        // Gun reticle
+        // --------------------------------------------------
+
+        const reticle =
+            document.createElement(
+                "div"
+            );
+
+        reticle.style.position =
+            "fixed";
+
+        reticle.style.left =
+            "50%";
+
+        reticle.style.top =
+            "50%";
+
+        reticle.style.width =
+            "18px";
+
+        reticle.style.height =
+            "18px";
+
+        reticle.style.border =
+            "2px solid white";
+
+        reticle.style.transform =
+            "translate(-50%, -50%)";
+
+        reticle.style.pointerEvents =
+            "none";
+
+        reticle.style.boxSizing =
+            "border-box";
+
+        document.body.appendChild(
+            reticle
+        );
+
+        // --------------------------------------------------
+        // Lead indicator
+        // --------------------------------------------------
+
+        const leadIndicator =
+            document.createElement(
+                "div"
+            );
+
+        leadIndicator.style.position =
+            "fixed";
+
+        leadIndicator.style.width =
+            "30px";
+
+        leadIndicator.style.height =
+            "30px";
+
+        leadIndicator.style.border =
+            "2px solid white";
+
+        leadIndicator.style.borderRadius =
+            "50%";
+
+        leadIndicator.style.transform =
+            "translate(-50%, -50%)";
+
+        leadIndicator.style.pointerEvents =
+            "none";
+
+        leadIndicator.style.display =
+            "none";
+
+        leadIndicator.style.boxSizing =
+            "border-box";
+
+        document.body.appendChild(
+            leadIndicator
+        );
+
+        // --------------------------------------------------
+        // Bomber HUD
+        // --------------------------------------------------
+
+        const bomberHud =
+            document.createElement(
+                "div"
+            );
+
+        bomberHud.style.position =
+            "fixed";
+
+        bomberHud.style.zIndex =
+            "10";
+
+        bomberHud.style.color =
+            "red";
+
+        bomberHud.style.fontFamily =
+            "monospace";
+
+        bomberHud.style.fontSize =
+            "18px";
+
+        bomberHud.style.fontWeight =
+            "bold";
+
+        bomberHud.style.textAlign =
+            "center";
+
+        bomberHud.style.whiteSpace =
+            "pre";
+
+        bomberHud.style.pointerEvents =
+            "none";
+
+        bomberHud.style.textShadow =
+            "0 0 4px black";
+
+        bomberHud.style.display =
+            "none";
+
+        document.body.appendChild(
+            bomberHud
+        );
+
+        // --------------------------------------------------
+        // Selected target box
+        // --------------------------------------------------
+
+        const targetBox =
+            document.createElement(
+                "div"
+            );
+
+        targetBox.style.position =
+            "fixed";
+
+        targetBox.style.width =
+            "70px";
+
+        targetBox.style.height =
+            "70px";
+
+        targetBox.style.border =
+            "2px solid red";
+
+        targetBox.style.transform =
+            "translate(-50%, -50%)";
+
+        targetBox.style.pointerEvents =
+            "none";
+
+        targetBox.style.boxSizing =
+            "border-box";
+
+        targetBox.style.zIndex =
+            "9";
+
+        targetBox.style.display =
+            "none";
+
+        document.body.appendChild(
+            targetBox
+        );
+
+        // --------------------------------------------------
+        // HUD helper
+        // --------------------------------------------------
+
+        function updateTargetHud(
+            hud: HTMLDivElement,
+            targetAircraft: Aircraft,
+            name: string,
+            selected: boolean,
+            targetLocked: boolean
+        ) {
+            const targetPosition =
+                targetAircraft.position.clone();
+
+            const projected =
+                targetPosition.project(
+                    camera
+                );
+
+            const halfWidth =
+                window.innerWidth / 2;
+
+            const halfHeight =
+                window.innerHeight / 2;
+
+            const screenX =
+                projected.x *
+                halfWidth +
+                halfWidth;
+
+            const screenY =
+                -projected.y *
+                halfHeight +
+                halfHeight;
+
+            const onScreen =
+                projected.z >= -1 &&
+                projected.z <= 1 &&
+                screenX >= 0 &&
+                screenX <=
+                window.innerWidth &&
+                screenY >= 0 &&
+                screenY <=
+                window.innerHeight;
+
+            const distance =
+                targetAircraft.position.distanceTo(
+                    player.position
+                );
+
+            hud.style.display =
+                "block";
+
+            if (onScreen) {
+                hud.style.left =
+                    `${screenX}px`;
+
+                hud.style.top =
+                    `${screenY}px`;
+
+                hud.style.transform =
+                    "translate(-50%, -50%)";
+
+                if (
+                    selected &&
+                    targetLocked
+                ) {
+                    hud.textContent =
+                        `◇ LOCK ${name}\n${distance.toFixed(
+                            0
+                        )}`;
+                } else {
+                    hud.textContent =
+                        `◇ ${name}\n${distance.toFixed(
+                            0
+                        )}`;
+                }
+            } else {
+                const dx =
+                    screenX -
+                    halfWidth;
+
+                const dy =
+                    screenY -
+                    halfHeight;
+
+                const angle =
+                    Math.atan2(
+                        dy,
+                        dx
+                    );
+
+                const margin = 40;
+
+                const radius =
+                    Math.min(
+                        halfWidth,
+                        halfHeight
+                    ) - margin;
+
+                const markerX =
+                    halfWidth +
+                    Math.cos(angle) *
+                    radius;
+
+                const markerY =
+                    halfHeight +
+                    Math.sin(angle) *
+                    radius;
+
+                hud.style.left =
+                    `${markerX}px`;
+
+                hud.style.top =
+                    `${markerY}px`;
+
+                hud.style.transform =
+                    "translate(-50%, -50%)";
+
+                hud.textContent =
+                    selected &&
+                    targetLocked
+                        ? "◇ LOCK"
+                        : `◇ ${name}`;
+            }
+        }
 
         // --------------------------------------------------
         // Launch missile
         // --------------------------------------------------
 
         function launchMissile() {
+            ensureValidTarget();
+
             if (
                 !locked ||
-                !enemy.alive
+                !target.getAlive()
             ) {
                 return;
             }
@@ -375,7 +916,7 @@ export default function Home() {
                 new Missile(
                     launchPosition,
                     forward,
-                    enemy.position
+                    target.aircraft.position
                 );
 
             missiles.push(
@@ -395,6 +936,113 @@ export default function Home() {
             missileMeshes.push(
                 missileMesh
             );
+
+            // ------------------------------------------------
+            // Missile trail
+            // ------------------------------------------------
+
+            const trail:
+                THREE.Mesh[] = [];
+
+            const trailLength = 25;
+
+            for (
+                let i = 0;
+                i < trailLength;
+                i++
+            ) {
+                const particle =
+                    new THREE.Mesh(
+                        trailParticleGeometry,
+                        trailParticleMaterial.clone()
+                    );
+
+                particle.position.copy(
+                    launchPosition
+                );
+
+                particle.scale.setScalar(
+                    0
+                );
+
+                scene.add(
+                    particle
+                );
+
+                trail.push(
+                    particle
+                );
+            }
+
+            missileTrails.push(
+                trail
+            );
+        }
+
+        // --------------------------------------------------
+        // Fire gun
+        // --------------------------------------------------
+
+        function fireGun() {
+            if (
+                !enemyAlive &&
+                !bomberAlive
+            ) {
+                return;
+            }
+
+            const forward =
+                new THREE.Vector3(
+                    0,
+                    0,
+                    -1
+                ).applyQuaternion(
+                    player.quaternion
+                );
+
+            const launchPosition =
+                player.position
+                    .clone()
+                    .addScaledVector(
+                        forward,
+                        4
+                    );
+
+            const playerVelocity =
+                forward
+                    .clone()
+                    .multiplyScalar(
+                        player.speed
+                    );
+
+            const projectile =
+                new GunProjectile(
+                    launchPosition,
+                    forward,
+                    playerVelocity
+                );
+
+            projectiles.push(
+                projectile
+            );
+
+            const mesh =
+                new THREE.Mesh(
+                    projectileGeometry,
+                    projectileMaterial
+                );
+
+            mesh.position.copy(
+                projectile.position
+            );
+
+            scene.add(
+                mesh
+            );
+
+            projectileMeshes.push(
+                mesh
+            );
         }
 
         // --------------------------------------------------
@@ -410,11 +1058,41 @@ export default function Home() {
             ) {
                 launchMissile();
             }
+
+            if (
+                event.code === "KeyF"
+            ) {
+                gunFiring = true;
+            }
+
+            if (
+                event.code === "Tab" &&
+                !event.repeat
+            ) {
+                event.preventDefault();
+
+                selectNextTarget();
+            }
+        }
+
+        function handleKeyUp(
+            event: KeyboardEvent
+        ) {
+            if (
+                event.code === "KeyF"
+            ) {
+                gunFiring = false;
+            }
         }
 
         window.addEventListener(
             "keydown",
             handleKeyDown
+        );
+
+        window.addEventListener(
+            "keyup",
+            handleKeyUp
         );
 
         // --------------------------------------------------
@@ -424,7 +1102,9 @@ export default function Home() {
         const chasePlane =
             new THREE.Object3D();
 
-        scene.add(chasePlane);
+        scene.add(
+            chasePlane
+        );
 
         const chaseOffset =
             new THREE.Vector3(
@@ -439,8 +1119,11 @@ export default function Home() {
         const chaseQuaternion =
             new THREE.Quaternion();
 
-        const chasePositionSmoothing = 30;
-        const chaseRotationSmoothing = 30;
+        const chasePositionSmoothing =
+            30;
+
+        const chaseRotationSmoothing =
+            30;
 
         // --------------------------------------------------
         // Animation
@@ -469,7 +1152,7 @@ export default function Home() {
                 currentTime;
 
             // ------------------------------------------------
-            // Update simulation
+            // Update player
             // ------------------------------------------------
 
             player.update(
@@ -490,40 +1173,32 @@ export default function Home() {
             );
 
             // ------------------------------------------------
-            // Enemy movement
+            // Update fighter
             // ------------------------------------------------
 
-            if (enemy.alive) {
-                enemy.angle +=
-                    0.15 * dt;
+            if (enemyAlive) {
+                const time =
+                    currentTime / 1000;
 
-                const radius = 500;
+                const enemyControls = {
+                    pitch:
+                        Math.sin(
+                            time * 0.4
+                        ) * 0.15,
 
-                enemy.position.set(
-                    Math.sin(enemy.angle) *
-                    radius,
-                    300,
-                    -800 +
-                    Math.cos(enemy.angle) *
-                    radius
-                );
+                    roll:
+                        Math.sin(
+                            time * 0.25
+                        ) * 0.25,
 
-                const tangent =
-                    new THREE.Vector3(
-                        Math.cos(enemy.angle),
-                        0,
-                        -Math.sin(enemy.angle)
-                    );
+                    yaw: 0,
 
-                tangent.normalize();
+                    throttle: 0,
+                };
 
-                enemy.quaternion.setFromUnitVectors(
-                    new THREE.Vector3(
-                        0,
-                        0,
-                        -1
-                    ),
-                    tangent
+                enemy.update(
+                    dt,
+                    enemyControls
                 );
 
                 enemyGroup.position.copy(
@@ -536,22 +1211,59 @@ export default function Home() {
             }
 
             // ------------------------------------------------
+            // Update bomber
+            // ------------------------------------------------
+
+            if (bomberAlive) {
+                bomber.update(
+                    dt,
+                    {
+                        pitch: 0,
+                        roll: 0,
+                        yaw: 0,
+                        throttle: 0,
+                    }
+                );
+
+                bomberGroup.position.copy(
+                    bomber.position
+                );
+
+                bomberGroup.quaternion.copy(
+                    bomber.quaternion
+                );
+            }
+
+            // ------------------------------------------------
+            // Target validity
+            // ------------------------------------------------
+
+            ensureValidTarget();
+
+            // ------------------------------------------------
             // Lock-on
             // ------------------------------------------------
 
-            if (enemy.alive) {
-                const toEnemy =
-                    enemy.position
+            locked = false;
+
+            if (
+                target.getAlive()
+            ) {
+                const toTarget =
+                    target.aircraft.position
                         .clone()
-                        .sub(player.position);
+                        .sub(
+                            player.position
+                        );
 
                 const distance =
-                    toEnemy.length();
+                    toTarget.length();
 
                 if (
-                    distance <= lockRange
+                    distance <=
+                    lockRange
                 ) {
-                    toEnemy.normalize();
+                    toTarget.normalize();
 
                     const forward =
                         new THREE.Vector3(
@@ -564,7 +1276,7 @@ export default function Home() {
 
                     const dot =
                         forward.dot(
-                            toEnemy
+                            toTarget
                         );
 
                     locked =
@@ -572,11 +1284,344 @@ export default function Home() {
                         Math.cos(
                             lockAngle
                         );
+                }
+            }
+
+            // ------------------------------------------------
+            // Gun
+            // ------------------------------------------------
+
+            gunCooldown -= dt;
+
+            if (
+                gunFiring &&
+                (enemyAlive ||
+                    bomberAlive) &&
+                gunCooldown <= 0
+            ) {
+                fireGun();
+
+                gunCooldown =
+                    1 / gunFireRate;
+            }
+
+            // ------------------------------------------------
+            // Gun projectiles
+            // ------------------------------------------------
+
+            for (
+                let i =
+                    projectiles.length - 1;
+                i >= 0;
+                i--
+            ) {
+                const projectile =
+                    projectiles[i];
+
+                projectile.update(dt);
+
+                const projectileMesh =
+                    projectileMeshes[i];
+
+                projectileMesh.position.copy(
+                    projectile.position
+                );
+
+                // Fighter collision
+                if (
+                    enemyAlive &&
+                    projectile.position.distanceTo(
+                        enemy.position
+                    ) < 5
+                ) {
+                    enemyHealth -= 10;
+
+                    projectile.alive =
+                        false;
+
+                    if (
+                        enemyHealth <= 0
+                    ) {
+                        enemyAlive =
+                            false;
+
+                        enemyGroup.visible =
+                            false;
+
+                        if (
+                            target.aircraft ===
+                            enemy
+                        ) {
+                            locked =
+                                false;
+
+                            ensureValidTarget();
+                        }
+
+                        const explosion =
+                            new Explosion(
+                                enemy.position
+                            );
+
+                        scene.add(
+                            explosion.group
+                        );
+
+                        explosions.push(
+                            explosion
+                        );
+                    }
+                }
+
+                // Bomber collision
+                if (
+                    bomberAlive &&
+                    projectile.position.distanceTo(
+                        bomber.position
+                    ) < 8
+                ) {
+                    bomberHealth -= 10;
+
+                    projectile.alive =
+                        false;
+
+                    if (
+                        bomberHealth <= 0
+                    ) {
+                        bomberAlive =
+                            false;
+
+                        bomberGroup.visible =
+                            false;
+
+                        if (
+                            target.aircraft ===
+                            bomber
+                        ) {
+                            locked =
+                                false;
+
+                            ensureValidTarget();
+                        }
+
+                        const explosion =
+                            new Explosion(
+                                bomber.position
+                            );
+
+                        scene.add(
+                            explosion.group
+                        );
+
+                        explosions.push(
+                            explosion
+                        );
+                    }
+                }
+
+                // ------------------------------------------------
+                // Remove dead projectile
+                // ------------------------------------------------
+
+                if (
+                    !projectile.alive
+                ) {
+                    scene.remove(
+                        projectileMesh
+                    );
+
+                    projectiles.splice(
+                        i,
+                        1
+                    );
+
+                    projectileMeshes.splice(
+                        i,
+                        1
+                    );
+                }
+            }
+
+            // ------------------------------------------------
+            // Lead indicator
+            // ------------------------------------------------
+
+            if (
+                target.getAlive()
+            ) {
+                const targetAircraft =
+                    target.aircraft;
+
+                const relativePosition =
+                    targetAircraft.position
+                        .clone()
+                        .sub(
+                            player.position
+                        );
+
+                const playerVelocity =
+                    new THREE.Vector3(
+                        0,
+                        0,
+                        -1
+                    )
+                        .applyQuaternion(
+                            player.quaternion
+                        )
+                        .multiplyScalar(
+                            player.speed
+                        );
+
+                const targetVelocity =
+                    new THREE.Vector3(
+                        0,
+                        0,
+                        -1
+                    )
+                        .applyQuaternion(
+                            targetAircraft.quaternion
+                        )
+                        .multiplyScalar(
+                            targetAircraft.speed
+                        );
+
+                const relativeVelocity =
+                    targetVelocity
+                        .clone()
+                        .sub(
+                            playerVelocity
+                        );
+
+                const projectileSpeed =
+                    gunMuzzleSpeed;
+
+                const a =
+                    relativeVelocity.lengthSq() -
+                    projectileSpeed *
+                    projectileSpeed;
+
+                const b =
+                    2 *
+                    relativePosition.dot(
+                        relativeVelocity
+                    );
+
+                const c =
+                    relativePosition.lengthSq();
+
+                let interceptTime = 0;
+
+                if (
+                    Math.abs(a) <
+                    0.000001
+                ) {
+                    if (
+                        Math.abs(b) >
+                        0.000001
+                    ) {
+                        interceptTime =
+                            -c / b;
+                    }
                 } else {
-                    locked = false;
+                    const discriminant =
+                        b * b -
+                        4 * a * c;
+
+                    if (
+                        discriminant >= 0
+                    ) {
+                        const sqrt =
+                            Math.sqrt(
+                                discriminant
+                            );
+
+                        const t1 =
+                            (-b - sqrt) /
+                            (2 * a);
+
+                        const t2 =
+                            (-b + sqrt) /
+                            (2 * a);
+
+                        if (
+                            t1 > 0 &&
+                            t2 > 0
+                        ) {
+                            interceptTime =
+                                Math.min(
+                                    t1,
+                                    t2
+                                );
+                        } else if (
+                            t1 > 0
+                        ) {
+                            interceptTime =
+                                t1;
+                        } else if (
+                            t2 > 0
+                        ) {
+                            interceptTime =
+                                t2;
+                        }
+                    }
+                }
+
+                if (
+                    interceptTime > 0 &&
+                    interceptTime < 5
+                ) {
+                    const predictedTarget =
+                        targetAircraft.position
+                            .clone()
+                            .addScaledVector(
+                                targetVelocity,
+                                interceptTime
+                            );
+
+                    const projected =
+                        predictedTarget.project(
+                            camera
+                        );
+
+                    if (
+                        projected.z >= -1 &&
+                        projected.z <= 1
+                    ) {
+                        const screenX =
+                            (
+                                projected.x *
+                                0.5 +
+                                0.5
+                            ) *
+                            window.innerWidth;
+
+                        const screenY =
+                            (
+                                -projected.y *
+                                0.5 +
+                                0.5
+                            ) *
+                            window.innerHeight;
+
+                        leadIndicator.style.left =
+                            `${screenX}px`;
+
+                        leadIndicator.style.top =
+                            `${screenY}px`;
+
+                        leadIndicator.style.display =
+                            "block";
+                    } else {
+                        leadIndicator.style.display =
+                            "none";
+                    }
+                } else {
+                    leadIndicator.style.display =
+                        "none";
                 }
             } else {
-                locked = false;
+                leadIndicator.style.display =
+                    "none";
             }
 
             // ------------------------------------------------
@@ -584,7 +1629,8 @@ export default function Home() {
             // ------------------------------------------------
 
             for (
-                let i = missiles.length - 1;
+                let i =
+                    missiles.length - 1;
                 i >= 0;
                 i--
             ) {
@@ -604,13 +1650,88 @@ export default function Home() {
                     missile.quaternion
                 );
 
+                // ------------------------------------------------
+                // Update trail
+                // ------------------------------------------------
+
+                const trail =
+                    missileTrails[i];
+
+                for (
+                    let j =
+                        trail.length - 1;
+                    j > 0;
+                    j--
+                ) {
+                    trail[j].position.copy(
+                        trail[j - 1].position
+                    );
+
+                    trail[j].scale.copy(
+                        trail[j - 1].scale
+                    );
+
+                    const previousMaterial =
+                        trail[j - 1]
+                            .material as
+                            THREE.MeshBasicMaterial;
+
+                    const material =
+                        trail[j]
+                            .material as
+                            THREE.MeshBasicMaterial;
+
+                    material.opacity =
+                        previousMaterial.opacity *
+                        0.94;
+                }
+
+                trail[0].position.copy(
+                    missile.position
+                );
+
+                trail[0].scale.setScalar(
+                    1
+                );
+
+                (
+                    trail[0].material as
+                        THREE.MeshBasicMaterial
+                ).opacity = 0.8;
+
+                for (
+                    let j = 1;
+                    j < trail.length;
+                    j++
+                ) {
+                    const age =
+                        j /
+                        trail.length;
+
+                    const scale =
+                        0.85 -
+                        age * 0.6;
+
+                    trail[j].scale.setScalar(
+                        Math.max(
+                            scale,
+                            0.15
+                        )
+                    );
+                }
+
+                // ------------------------------------------------
+                // Missile collision
+                // ------------------------------------------------
+
                 if (
-                    enemy.alive &&
+                    enemyAlive &&
                     missile.position.distanceTo(
                         enemy.position
                     ) < 5
                 ) {
-                    enemy.alive = false;
+                    enemyAlive =
+                        false;
 
                     enemyGroup.visible =
                         false;
@@ -618,13 +1739,95 @@ export default function Home() {
                     missile.alive =
                         false;
 
-                    locked = false;
+                    if (
+                        target.aircraft ===
+                        enemy
+                    ) {
+                        locked =
+                            false;
+
+                        ensureValidTarget();
+                    }
+
+                    const explosion =
+                        new Explosion(
+                            enemy.position
+                        );
+
+                    scene.add(
+                        explosion.group
+                    );
+
+                    explosions.push(
+                        explosion
+                    );
                 }
 
-                if (!missile.alive) {
+                if (
+                    bomberAlive &&
+                    missile.position.distanceTo(
+                        bomber.position
+                    ) < 8
+                ) {
+                    bomberAlive =
+                        false;
+
+                    bomberGroup.visible =
+                        false;
+
+                    missile.alive =
+                        false;
+
+                    if (
+                        target.aircraft ===
+                        bomber
+                    ) {
+                        locked =
+                            false;
+
+                        ensureValidTarget();
+                    }
+
+                    const explosion =
+                        new Explosion(
+                            bomber.position
+                        );
+
+                    scene.add(
+                        explosion.group
+                    );
+
+                    explosions.push(
+                        explosion
+                    );
+                }
+
+                // ------------------------------------------------
+                // Remove dead missile
+                // ------------------------------------------------
+
+                if (
+                    !missile.alive
+                ) {
                     scene.remove(
                         missileMesh
                     );
+
+                    for (
+                        const particle of
+                        missileTrails[i]
+                        ) {
+                        scene.remove(
+                            particle
+                        );
+
+                        particle.geometry.dispose();
+
+                        (
+                            particle.material as
+                                THREE.Material
+                        ).dispose();
+                    }
 
                     missiles.splice(
                         i,
@@ -635,11 +1838,45 @@ export default function Home() {
                         i,
                         1
                     );
+
+                    missileTrails.splice(
+                        i,
+                        1
+                    );
                 }
             }
 
             // ------------------------------------------------
-            // Simulation → aircraft
+            // Explosions
+            // ------------------------------------------------
+
+            for (
+                let i =
+                    explosions.length - 1;
+                i >= 0;
+                i--
+            ) {
+                const explosion =
+                    explosions[i];
+
+                explosion.update(dt);
+
+                if (
+                    !explosion.alive
+                ) {
+                    scene.remove(
+                        explosion.group
+                    );
+
+                    explosions.splice(
+                        i,
+                        1
+                    );
+                }
+            }
+
+            // ------------------------------------------------
+            // Player render object
             // ------------------------------------------------
 
             aircraft.position.copy(
@@ -684,7 +1921,9 @@ export default function Home() {
                 .applyQuaternion(
                     player.quaternion
                 )
-                .add(player.position);
+                .add(
+                    player.position
+                );
 
             chaseQuaternion.copy(
                 player.quaternion
@@ -723,20 +1962,58 @@ export default function Home() {
             );
 
             // ------------------------------------------------
-            // Target HUD
+            // Fighter HUD
+            // ------------------------------------------------
+
+            if (enemyAlive) {
+                updateTargetHud(
+                    hudRef.current!,
+                    enemy,
+                    "FIGHTER",
+                    target.aircraft ===
+                    enemy,
+                    locked &&
+                    target.aircraft ===
+                    enemy
+                );
+            } else if (
+                hudRef.current
+            ) {
+                hudRef.current.style.display =
+                    "none";
+            }
+
+            // ------------------------------------------------
+            // Bomber HUD
+            // ------------------------------------------------
+
+            if (bomberAlive) {
+                updateTargetHud(
+                    bomberHud,
+                    bomber,
+                    "BOMBER",
+                    target.aircraft ===
+                    bomber,
+                    locked &&
+                    target.aircraft ===
+                    bomber
+                );
+            } else {
+                bomberHud.style.display =
+                    "none";
+            }
+
+            // ------------------------------------------------
+            // Selected target box
             // ------------------------------------------------
 
             if (
-                hudRef.current &&
-                enemy.alive
+                target.getAlive()
             ) {
-                const targetPosition =
-                    enemy.position.clone();
-
                 const projected =
-                    targetPosition.project(
-                        camera
-                    );
+                    target.aircraft.position
+                        .clone()
+                        .project(camera);
 
                 const halfWidth =
                     window.innerWidth / 2;
@@ -764,32 +2041,13 @@ export default function Home() {
                     screenY <=
                     window.innerHeight;
 
-                const distance =
-                    enemy.position.distanceTo(
-                        player.position
-                    );
+                let boxX =
+                    screenX;
 
-                const marker =
-                    hudRef.current;
+                let boxY =
+                    screenY;
 
-                marker.style.display =
-                    "block";
-
-                if (onScreen) {
-                    marker.style.left =
-                        `${screenX}px`;
-
-                    marker.style.top =
-                        `${screenY}px`;
-
-                    marker.style.transform =
-                        "translate(-50%, -50%)";
-
-                    marker.textContent =
-                        locked
-                            ? `◇ LOCK\n${distance.toFixed(0)}`
-                            : `◇\n${distance.toFixed(0)}`;
-                } else {
+                if (!onScreen) {
                     const dx =
                         screenX -
                         halfWidth;
@@ -812,32 +2070,27 @@ export default function Home() {
                             halfHeight
                         ) - margin;
 
-                    const markerX =
+                    boxX =
                         halfWidth +
                         Math.cos(angle) *
                         radius;
 
-                    const markerY =
+                    boxY =
                         halfHeight +
                         Math.sin(angle) *
                         radius;
-
-                    marker.style.left =
-                        `${markerX}px`;
-
-                    marker.style.top =
-                        `${markerY}px`;
-
-                    marker.style.transform =
-                        "translate(-50%, -50%)";
-
-                    marker.textContent =
-                        "◇";
                 }
-            } else if (
-                hudRef.current
-            ) {
-                hudRef.current.style.display =
+
+                targetBox.style.left =
+                    `${boxX}px`;
+
+                targetBox.style.top =
+                    `${boxY}px`;
+
+                targetBox.style.display =
+                    "block";
+            } else {
+                targetBox.style.display =
                     "none";
             }
 
@@ -845,32 +2098,66 @@ export default function Home() {
             // Debug
             // ------------------------------------------------
 
-            if (debugRef.current) {
+            if (
+                debugRef.current
+            ) {
                 const enemyDistance =
                     enemy.position.distanceTo(
                         player.position
                     );
 
+                const bomberDistance =
+                    bomber.position.distanceTo(
+                        player.position
+                    );
+
                 debugRef.current.textContent =
                     [
-                        `FPS: ${(1 / dt).toFixed(0)}`,
-                        "",
-
-                        `PITCH:   ${controls.pitch.toFixed(0)}`,
-                        `ROLL:    ${controls.roll.toFixed(0)}`,
-                        `YAW:     ${controls.yaw.toFixed(0)}`,
-                        `THROTTLE:${controls.throttle.toFixed(0)}`,
+                        `FPS: ${(
+                            1 / dt
+                        ).toFixed(0)}`,
 
                         "",
 
-                        `SPEED:   ${player.speed.toFixed(1)}`,
-                        `THROTTLE:${player.throttle.toFixed(2)}`,
+                        `PITCH:   ${controls.pitch.toFixed(
+                            0
+                        )}`,
+
+                        `ROLL:    ${controls.roll.toFixed(
+                            0
+                        )}`,
+
+                        `YAW:     ${controls.yaw.toFixed(
+                            0
+                        )}`,
+
+                        `THROTTLE:${controls.throttle.toFixed(
+                            0
+                        )}`,
 
                         "",
 
-                        `X: ${player.position.x.toFixed(1)}`,
-                        `Y: ${player.position.y.toFixed(1)}`,
-                        `Z: ${player.position.z.toFixed(1)}`,
+                        `SPEED:   ${player.speed.toFixed(
+                            1
+                        )}`,
+
+                        `THROTTLE:${player.throttle.toFixed(
+                            2
+                        )}`,
+
+                        "",
+
+                        `X: ${player.position.x.toFixed(
+                            1
+                        )}`,
+
+                        `Y: ${player.position.y.toFixed(
+                            1
+                        )}`,
+
+                        `Z: ${player.position.z.toFixed(
+                            1
+                        )}`,
 
                         "",
 
@@ -894,13 +2181,7 @@ export default function Home() {
 
                         "",
 
-                        `ENEMY: ${
-                            enemy.alive
-                                ? "ALIVE"
-                                : "DESTROYED"
-                        }`,
-
-                        `DIST: ${enemyDistance.toFixed(1)}`,
+                        `TARGET: ${target.name}`,
 
                         `LOCK: ${
                             locked
@@ -908,7 +2189,47 @@ export default function Home() {
                                 : "NO"
                         }`,
 
+                        "",
+
+                        `FIGHTER: ${
+                            enemyAlive
+                                ? "ALIVE"
+                                : "DESTROYED"
+                        }`,
+
+                        `FIGHTER HP: ${enemyHealth}`,
+
+                        `FIGHTER DIST: ${enemyDistance.toFixed(
+                            1
+                        )}`,
+
+                        "",
+
+                        `BOMBER: ${
+                            bomberAlive
+                                ? "ALIVE"
+                                : "DESTROYED"
+                        }`,
+
+                        `BOMBER HP: ${bomberHealth}`,
+
+                        `BOMBER DIST: ${bomberDistance.toFixed(
+                            1
+                        )}`,
+
+                        "",
+
                         `MISSILES: ${missiles.length}`,
+
+                        `GUN: ${
+                            gunFiring
+                                ? "FIRING"
+                                : "READY"
+                        }`,
+
+                        `ROUNDS: ${projectiles.length}`,
+
+                        `EXPLOSIONS: ${explosions.length}`,
                     ].join("\n");
             }
 
@@ -963,6 +2284,16 @@ export default function Home() {
                 handleKeyDown
             );
 
+            window.removeEventListener(
+                "keyup",
+                handleKeyUp
+            );
+
+            reticle.remove();
+            leadIndicator.remove();
+            bomberHud.remove();
+            targetBox.remove();
+
             renderer.dispose();
 
             controls.dispose();
@@ -1012,12 +2343,14 @@ export default function Home() {
                     top: "50%",
                     zIndex: 10,
                     color: "red",
-                    fontFamily: "monospace",
+                    fontFamily:
+                        "monospace",
                     fontSize: "18px",
                     fontWeight: "bold",
                     textAlign: "center",
                     whiteSpace: "pre",
-                    pointerEvents: "none",
+                    pointerEvents:
+                        "none",
                     textShadow:
                         "0 0 4px black",
                 }}

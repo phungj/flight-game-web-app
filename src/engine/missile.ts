@@ -45,20 +45,12 @@ export class Missile {
             return;
         }
 
-        // --------------------------------------------
-        // Lifetime
-        // --------------------------------------------
-
         this.life -= dt;
 
         if (this.life <= 0) {
             this.alive = false;
             return;
         }
-
-        // --------------------------------------------
-        // Current forward direction
-        // --------------------------------------------
 
         const forward =
             new THREE.Vector3(
@@ -68,10 +60,6 @@ export class Missile {
             ).applyQuaternion(
                 this.quaternion
             );
-
-        // --------------------------------------------
-        // Desired direction
-        // --------------------------------------------
 
         const desired =
             this.target
@@ -84,10 +72,6 @@ export class Missile {
         if (distance > 0.001) {
             desired.normalize();
         }
-
-        // --------------------------------------------
-        // Turn toward target
-        // --------------------------------------------
 
         const angle =
             forward.angleTo(
@@ -102,7 +86,10 @@ export class Missile {
                         desired
                     );
 
-            if (axis.lengthSq() > 0.000001) {
+            if (
+                axis.lengthSq() >
+                0.000001
+            ) {
                 axis.normalize();
 
                 const turn =
@@ -126,10 +113,6 @@ export class Missile {
                 this.quaternion.normalize();
             }
         }
-
-        // --------------------------------------------
-        // Movement
-        // --------------------------------------------
 
         const newForward =
             new THREE.Vector3(
