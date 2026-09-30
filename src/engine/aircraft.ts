@@ -24,10 +24,6 @@ export class Aircraft {
             throttle: number;
         }
     ) {
-        // --------------------
-        // Orientation
-        // --------------------
-
         const pitch =
             controls.pitch *
             this.pitchRate *
@@ -42,13 +38,6 @@ export class Aircraft {
             controls.yaw *
             this.yawRate *
             dt;
-
-        // These rotations are defined in
-        // aircraft-local coordinates.
-        //
-        // X = aircraft right
-        // Y = aircraft up
-        // Z = aircraft forward/back
 
         const pitchRotation =
             new THREE.Quaternion()
@@ -71,8 +60,6 @@ export class Aircraft {
                     yaw
                 );
 
-        // Post-multiplication applies the rotations
-        // around the aircraft's LOCAL axes.
         this.quaternion
             .multiply(pitchRotation)
             .multiply(rollRotation)
@@ -80,47 +67,41 @@ export class Aircraft {
 
         this.quaternion.normalize();
 
-        // Keep the Euler around for your existing
-        // rendering/debugging code.
         this.rotation.setFromQuaternion(
             this.quaternion,
             "YXZ"
         );
 
-        // --------------------
-        // Throttle
-        // --------------------
-
         this.throttle +=
             controls.throttle * dt;
 
-        this.throttle = THREE.MathUtils.clamp(
-            this.throttle,
-            0,
-            1
-        );
-
-        // --------------------
-        // Speed
-        // --------------------
+        this.throttle =
+            THREE.MathUtils.clamp(
+                this.throttle,
+                0,
+                1
+            );
 
         const targetSpeed =
-            50 + this.throttle * 200;
+            50 +
+            this.throttle * 200;
 
-        this.speed = THREE.MathUtils.damp(
-            this.speed,
-            targetSpeed,
-            3,
-            dt
-        );
-
-        // --------------------
-        // Movement
-        // --------------------
+        this.speed =
+            THREE.MathUtils.damp(
+                this.speed,
+                targetSpeed,
+                3,
+                dt
+            );
 
         const forward =
-            new THREE.Vector3(0, 0, -1)
-                .applyQuaternion(this.quaternion);
+            new THREE.Vector3(
+                0,
+                0,
+                -1
+            ).applyQuaternion(
+                this.quaternion
+            );
 
         this.position.addScaledVector(
             forward,

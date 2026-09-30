@@ -16,13 +16,19 @@ export class GunProjectile {
         direction: THREE.Vector3,
         parentVelocity: THREE.Vector3
     ) {
-        this.position.copy(position);
+        this.position.copy(
+            position
+        );
 
         this.velocity
             .copy(direction)
             .normalize()
-            .multiplyScalar(this.muzzleSpeed)
-            .add(parentVelocity);
+            .multiplyScalar(
+                this.muzzleSpeed
+            )
+            .add(
+                parentVelocity
+            );
     }
 
     update(dt: number) {
@@ -32,7 +38,10 @@ export class GunProjectile {
 
         this.life += dt;
 
-        if (this.life >= this.maxLife) {
+        if (
+            this.life >=
+            this.maxLife
+        ) {
             this.alive = false;
             return;
         }
