@@ -15,6 +15,10 @@ export type EnemyControls = {
     throttle: number;
 };
 
+export type EnemyOptions = {
+    countermeasures: number;
+};
+
 type Flare = {
     mesh: THREE.Mesh;
     trail: THREE.Line;
@@ -45,7 +49,7 @@ export class Enemy {
     missileCooldown = 0;
     missileReloadTime = 8;
 
-    countermeasures = 2;
+    countermeasures: number;
     countermeasureCooldown = 0;
     countermeasureCooldownTime = 2;
 
@@ -70,9 +74,13 @@ export class Enemy {
 
     constructor(
         type: EnemyType,
-        position: THREE.Vector3
+        position: THREE.Vector3,
+        options: EnemyOptions
     ) {
         this.type = type;
+
+        this.countermeasures =
+            options.countermeasures;
 
         this.aircraft =
             new Aircraft();
@@ -141,7 +149,9 @@ export class Enemy {
             this.aircraft.quaternion
         );
 
-        if (type === "fighter") {
+        if (
+            type === "fighter"
+        ) {
             this.createContrails();
         }
     }
