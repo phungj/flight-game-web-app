@@ -5,11 +5,13 @@ import {
 } from "./enemy";
 
 import { Player } from "./player";
+import { Missile } from "./missile";
 
 export type FighterAIOutput = {
     controls: EnemyControls;
     fireGun: boolean;
     fireMissile: boolean;
+    useCountermeasure: boolean;
 
     debug: {
         interceptPoint: THREE.Vector3;
@@ -22,6 +24,9 @@ export type FighterAIOutput = {
 export class FighterAI {
     private target: Player;
 
+    private yawCommand = 0;
+    private pitchCommand = 0;
+
     constructor(
         target: Player
     ) {
@@ -29,9 +34,14 @@ export class FighterAI {
     }
 
     update(
-        fighter: Player["aircraft"]
+        fighter: Player["aircraft"],
+        incomingMissiles: Missile[],
+        dt: number = 1 / 60
     ): FighterAIOutput {
         if (!this.target.alive) {
+            this.yawCommand = 0;
+            this.pitchCommand = 0;
+
             return {
                 controls: {
                     pitch: 0,
@@ -42,6 +52,7 @@ export class FighterAI {
 
                 fireGun: false,
                 fireMissile: false,
+                useCountermeasure: false,
 
                 debug: {
                     interceptPoint:
@@ -54,23 +65,57 @@ export class FighterAI {
             };
         }
 
-        // --------------------------------------------------
-        // Estimate where the player will be
-        // --------------------------------------------------
+        /*
+         * --------------------------------------------------
+         * COUNTERMEASURES
+         * --------------------------------------------------
+         */
 
-        const targetForward =
-            new THREE.Vector3(
-                0,
-                0,
-                -1
-            ).applyQuaternion(
-                this.target.quaternion
-            );
+        let closestMissile:
+            Missile | null = null;
 
-        const targetVelocity =
-            targetForward.multiplyScalar(
-                this.target.speed
-            );
+        let closestMissileDistance =
+            Infinity;
+
+        for (
+            const missile of
+            incomingMissiles
+            ) {
+            if (
+                !missile.alive ||
+                missile.target !==
+                fighter.position
+            ) {
+                continue;
+            }
+
+            const distance =
+                missile.position.distanceTo(
+                    fighter.position
+                );
+
+            if (
+                distance <
+                closestMissileDistance
+            ) {
+                closestMissile =
+                    missile;
+
+                closestMissileDistance =
+                    distance;
+            }
+        }
+
+        const useCountermeasure =
+            closestMissile !== null &&
+            closestMissileDistance <
+            700;
+
+        /*
+         * --------------------------------------------------
+         * TARGET
+         * --------------------------------------------------
+         */
 
         const toTarget =
             this.target.position
@@ -86,16 +131,38 @@ export class FighterAI {
             distance <
             0.000001
         ) {
+            this.yawCommand =
+                THREE.MathUtils.damp(
+                    this.yawCommand,
+                    0,
+                    8,
+                    dt
+                );
+
+            this.pitchCommand =
+                THREE.MathUtils.damp(
+                    this.pitchCommand,
+                    0,
+                    8,
+                    dt
+                );
+
             return {
                 controls: {
-                    pitch: 0,
+                    pitch:
+                    this.pitchCommand,
+
                     roll: 0,
-                    yaw: 0,
-                    throttle: 1,
+
+                    yaw:
+                    this.yawCommand,
+
+                    throttle: 0.1,
                 },
 
                 fireGun: false,
                 fireMissile: false,
+                useCountermeasure,
 
                 debug: {
                     interceptPoint:
@@ -108,35 +175,15 @@ export class FighterAI {
             };
         }
 
-        // --------------------------------------------------
-        // Predict target position
-        // --------------------------------------------------
-
-        const interceptTime =
-            THREE.MathUtils.clamp(
-                distance / 300,
-                0,
-                3
-            );
-
-        const interceptPoint =
-            this.target.position
-                .clone()
-                .addScaledVector(
-                    targetVelocity,
-                    interceptTime
-                );
-
-        // --------------------------------------------------
-        // Convert target point into fighter-local space
-        // --------------------------------------------------
+        /*
+         * --------------------------------------------------
+         * LOCAL TARGET
+         * --------------------------------------------------
+         */
 
         const desiredDirection =
-            interceptPoint
+            toTarget
                 .clone()
-                .sub(
-                    fighter.position
-                )
                 .normalize();
 
         const localTarget =
@@ -165,39 +212,91 @@ export class FighterAI {
                 )
             );
 
-        // --------------------------------------------------
-        // Steering
-        // --------------------------------------------------
+        /*
+         * --------------------------------------------------
+         * DESIRED YAW
+         * --------------------------------------------------
+         */
 
-        // Deliberately use a wider response range than
-        // before. This makes the fighter turn aggressively
-        // when badly misaligned without constantly
-        // flipping between full-left and full-right
-        // corrections near the target.
-        const steeringAngle =
+        const yawFullPowerAngle =
             THREE.MathUtils.degToRad(
-                35
+                45
             );
 
-        const yaw =
-            THREE.MathUtils.clamp(
-                horizontalAngle /
-                steeringAngle,
-                -1,
-                1
+        let desiredYaw = 0;
+
+        if (
+            Math.abs(horizontalAngle) >
+            THREE.MathUtils.degToRad(2)
+        ) {
+            desiredYaw =
+                -THREE.MathUtils.clamp(
+                    horizontalAngle /
+                    yawFullPowerAngle,
+                    -1,
+                    1
+                );
+        }
+
+        /*
+         * --------------------------------------------------
+         * DESIRED PITCH
+         * --------------------------------------------------
+         *
+         * Positive vertical angle means the target is
+         * above the aircraft, so pitch up.
+         *
+         * We use a smaller full-power angle than yaw,
+         * because pitch is more sensitive in this model.
+         */
+
+        const pitchFullPowerAngle =
+            THREE.MathUtils.degToRad(
+                30
             );
 
-        const pitch =
-            THREE.MathUtils.clamp(
-                verticalAngle /
-                steeringAngle,
-                -1,
-                1
+        let desiredPitch = 0;
+
+        if (
+            Math.abs(verticalAngle) >
+            THREE.MathUtils.degToRad(2)
+        ) {
+            desiredPitch =
+                THREE.MathUtils.clamp(
+                    verticalAngle /
+                    pitchFullPowerAngle,
+                    -1,
+                    1
+                );
+        }
+
+        /*
+         * --------------------------------------------------
+         * DAMP CONTROLS
+         * --------------------------------------------------
+         */
+
+        this.yawCommand =
+            THREE.MathUtils.damp(
+                this.yawCommand,
+                desiredYaw,
+                5,
+                dt
             );
 
-        // --------------------------------------------------
-        // Weapons
-        // --------------------------------------------------
+        this.pitchCommand =
+            THREE.MathUtils.damp(
+                this.pitchCommand,
+                desiredPitch,
+                5,
+                dt
+            );
+
+        /*
+         * --------------------------------------------------
+         * WEAPONS
+         * --------------------------------------------------
+         */
 
         const gunAngle =
             THREE.MathUtils.degToRad(
@@ -211,35 +310,48 @@ export class FighterAI {
 
         const fireGun =
             distance < 800 &&
-            Math.abs(
-                horizontalAngle
-            ) < gunAngle &&
-            Math.abs(
-                verticalAngle
-            ) < gunAngle;
+            Math.abs(horizontalAngle) <
+            gunAngle &&
+            Math.abs(verticalAngle) <
+            gunAngle;
 
         const fireMissile =
             distance < 1500 &&
-            Math.abs(
-                horizontalAngle
-            ) < missileAngle &&
-            Math.abs(
-                verticalAngle
-            ) < missileAngle;
+            Math.abs(horizontalAngle) <
+            missileAngle &&
+            Math.abs(verticalAngle) <
+            missileAngle;
+
+        /*
+         * --------------------------------------------------
+         * OUTPUT
+         * --------------------------------------------------
+         */
 
         return {
             controls: {
-                pitch,
+                pitch:
+                this.pitchCommand,
+
                 roll: 0,
-                yaw,
-                throttle: 1,
+
+                yaw:
+                this.yawCommand,
+
+                throttle:
+                    distance > 500
+                        ? 0.25
+                        : 0.1,
             },
 
             fireGun,
             fireMissile,
+            useCountermeasure,
 
             debug: {
-                interceptPoint,
+                interceptPoint:
+                    this.target.position.clone(),
+
                 horizontalAngle,
                 verticalAngle,
                 distance,

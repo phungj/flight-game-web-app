@@ -72,14 +72,23 @@ export class Aircraft {
             "YXZ"
         );
 
-        this.throttle +=
-            controls.throttle * dt;
+        /*
+         * Throttle is an absolute target.
+         */
 
-        this.throttle =
+        const targetThrottle =
             THREE.MathUtils.clamp(
-                this.throttle,
+                controls.throttle,
                 0,
                 1
+            );
+
+        this.throttle =
+            THREE.MathUtils.damp(
+                this.throttle,
+                targetThrottle,
+                3,
+                dt
             );
 
         const targetSpeed =

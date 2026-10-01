@@ -16,9 +16,6 @@ export default function Home() {
     const containerRef =
         useRef<HTMLDivElement>(null);
 
-    const debugRef =
-        useRef<HTMLDivElement>(null);
-
     const hudRef =
         useRef<HTMLDivElement>(null);
 
@@ -50,7 +47,7 @@ export default function Home() {
                 window.innerWidth /
                 window.innerHeight,
                 0.1,
-                10000
+                100000
             );
 
         // --------------------------------------------------
@@ -87,9 +84,7 @@ export default function Home() {
             100
         );
 
-        scene.add(
-            sunlight
-        );
+        scene.add(sunlight);
 
         scene.add(
             new THREE.AmbientLight(
@@ -99,14 +94,14 @@ export default function Home() {
         );
 
         // --------------------------------------------------
-        // Ground
+        // Water
         // --------------------------------------------------
 
         const ground =
             new THREE.Mesh(
                 new THREE.PlaneGeometry(
-                    10000,
-                    10000
+                    100000,
+                    100000
                 ),
                 new THREE.MeshStandardMaterial({
                     color: 0x2874a6,
@@ -116,9 +111,7 @@ export default function Home() {
         ground.rotation.x =
             -Math.PI / 2;
 
-        scene.add(
-            ground
-        );
+        scene.add(ground);
 
         // --------------------------------------------------
         // Player
@@ -126,6 +119,12 @@ export default function Home() {
 
         const player =
             new Player();
+
+        player.aircraft.position.set(
+            0,
+            500,
+            0
+        );
 
         const controls =
             new Controls();
@@ -180,9 +179,7 @@ export default function Home() {
         wings.position.z =
             0.5;
 
-        playerAircraft.add(
-            wings
-        );
+        playerAircraft.add(wings);
 
         const tail =
             new THREE.Mesh(
@@ -197,9 +194,7 @@ export default function Home() {
         tail.position.z =
             1.8;
 
-        playerAircraft.add(
-            tail
-        );
+        playerAircraft.add(tail);
 
         const verticalTail =
             new THREE.Mesh(
@@ -226,46 +221,16 @@ export default function Home() {
         );
 
         // --------------------------------------------------
-        // Aircraft axes
-        // --------------------------------------------------
-
-        const axes =
-            new THREE.AxesHelper(5);
-
-        playerAircraft.add(
-            axes
-        );
-
-        // --------------------------------------------------
-        // Velocity arrow
-        // --------------------------------------------------
-
-        const velocityArrow =
-            new THREE.ArrowHelper(
-                new THREE.Vector3(
-                    0,
-                    0,
-                    -1
-                ),
-                new THREE.Vector3(),
-                20
-            );
-
-        scene.add(
-            velocityArrow
-        );
-
-        // --------------------------------------------------
-        // Enemies
+        // Scenario
         // --------------------------------------------------
 
         const fighter =
             new Enemy(
                 "fighter",
                 new THREE.Vector3(
-                    0,
-                    300,
-                    -1400
+                    500,
+                    750,
+                    -3200
                 )
             );
 
@@ -274,8 +239,8 @@ export default function Home() {
                 "bomber",
                 new THREE.Vector3(
                     0,
-                    150,
-                    -1200
+                    700,
+                    -4000
                 )
             );
 
@@ -287,11 +252,10 @@ export default function Home() {
             bomber.group
         );
 
-        const enemies =
-            [
-                fighter,
-                bomber,
-            ];
+        const enemies = [
+            fighter,
+            bomber,
+        ];
 
         // --------------------------------------------------
         // Fighter AI
@@ -329,16 +293,12 @@ export default function Home() {
 
         let locked = false;
 
-        const lockRange = 1000;
+        const lockRange = 1500;
 
         const lockAngle =
             THREE.MathUtils.degToRad(
                 18
             );
-
-        // --------------------------------------------------
-        // Target switching
-        // --------------------------------------------------
 
         function selectNextTarget() {
             for (
@@ -415,10 +375,6 @@ export default function Home() {
                 color: 0xeeeeee,
             });
 
-        // --------------------------------------------------
-        // Missile trail
-        // --------------------------------------------------
-
         const trailParticleGeometry =
             new THREE.SphereGeometry(
                 0.35,
@@ -474,47 +430,13 @@ export default function Home() {
         const explosions:
             Explosion[] = [];
 
-        function destroyPlayer() {
-            playerAircraft.visible =
-                false;
+        const deathPosition =
+            new THREE.Vector3();
 
-            velocityArrow.visible =
-                false;
+        const deathQuaternion =
+            new THREE.Quaternion();
 
-            gunFiring = false;
-            locked = false;
-
-            leadIndicator.style.display =
-                "none";
-
-            missileWarning.style.display =
-                "none";
-
-            missileDirection.style.display =
-                "none";
-
-            fighterHud.style.display =
-                "none";
-
-            bomberHud.style.display =
-                "none";
-
-            targetBox.style.display =
-                "none";
-
-            const explosion =
-                new Explosion(
-                    player.position
-                );
-
-            scene.add(
-                explosion.group
-            );
-
-            explosions.push(
-                explosion
-            );
-        }
+        let playerHasDied = false;
 
         // --------------------------------------------------
         // Gun reticle
@@ -697,7 +619,7 @@ export default function Home() {
         );
 
         // --------------------------------------------------
-        // Fighter HUD
+        // HUD
         // --------------------------------------------------
 
         const fighterHud =
@@ -705,10 +627,6 @@ export default function Home() {
 
         fighterHud.style.display =
             "none";
-
-        // --------------------------------------------------
-        // Bomber HUD
-        // --------------------------------------------------
 
         const bomberHud =
             document.createElement(
@@ -752,10 +670,6 @@ export default function Home() {
             bomberHud
         );
 
-        // --------------------------------------------------
-        // Selected target box
-        // --------------------------------------------------
-
         const targetBox =
             document.createElement(
                 "div"
@@ -791,6 +705,571 @@ export default function Home() {
         document.body.appendChild(
             targetBox
         );
+
+        // --------------------------------------------------
+        // Radar
+        // --------------------------------------------------
+
+        const radar =
+            document.createElement(
+                "div"
+            );
+
+        radar.style.position =
+            "fixed";
+
+        radar.style.left =
+            "28px";
+
+        radar.style.bottom =
+            "28px";
+
+        radar.style.width =
+            "180px";
+
+        radar.style.height =
+            "180px";
+
+        radar.style.border =
+            "2px solid rgba(255, 255, 255, 0.65)";
+
+        radar.style.borderRadius =
+            "50%";
+
+        radar.style.background =
+            "rgba(0, 0, 0, 0.35)";
+
+        radar.style.boxSizing =
+            "border-box";
+
+        radar.style.pointerEvents =
+            "none";
+
+        radar.style.zIndex =
+            "10";
+
+        radar.style.overflow =
+            "hidden";
+
+        document.body.appendChild(
+            radar
+        );
+
+        // --------------------------------------------------
+        // Radar grid
+        // --------------------------------------------------
+
+        const radarGrid =
+            document.createElement(
+                "div"
+            );
+
+        radarGrid.style.position =
+            "absolute";
+
+        radarGrid.style.left =
+            "0";
+
+        radarGrid.style.top =
+            "0";
+
+        radarGrid.style.width =
+            "100%";
+
+        radarGrid.style.height =
+            "100%";
+
+        radarGrid.style.pointerEvents =
+            "none";
+
+        radarGrid.style.overflow =
+            "hidden";
+
+        radar.appendChild(
+            radarGrid
+        );
+
+        const radarCircleRadii = [
+            0.25,
+            0.5,
+            0.75,
+        ];
+
+        for (
+            const fraction of
+            radarCircleRadii
+            ) {
+            const circle =
+                document.createElement(
+                    "div"
+                );
+
+            const diameter =
+                180 * fraction;
+
+            circle.style.position =
+                "absolute";
+
+            circle.style.width =
+                `${diameter}px`;
+
+            circle.style.height =
+                `${diameter}px`;
+
+            circle.style.left =
+                `${90 - diameter / 2}px`;
+
+            circle.style.top =
+                `${90 - diameter / 2}px`;
+
+            circle.style.border =
+                "1px solid rgba(255, 255, 255, 0.15)";
+
+            circle.style.borderRadius =
+                "50%";
+
+            circle.style.boxSizing =
+                "border-box";
+
+            radarGrid.appendChild(
+                circle
+            );
+        }
+
+        // --------------------------------------------------
+        // Radar crosshair
+        // --------------------------------------------------
+
+        const radarHorizontal =
+            document.createElement(
+                "div"
+            );
+
+        radarHorizontal.style.position =
+            "absolute";
+
+        radarHorizontal.style.left =
+            "0";
+
+        radarHorizontal.style.top =
+            "50%";
+
+        radarHorizontal.style.width =
+            "100%";
+
+        radarHorizontal.style.height =
+            "1px";
+
+        radarHorizontal.style.transform =
+            "translateY(-50%)";
+
+        radarHorizontal.style.background =
+            "rgba(255, 255, 255, 0.15)";
+
+        radarGrid.appendChild(
+            radarHorizontal
+        );
+
+        const radarVertical =
+            document.createElement(
+                "div"
+            );
+
+        radarVertical.style.position =
+            "absolute";
+
+        radarVertical.style.left =
+            "50%";
+
+        radarVertical.style.top =
+            "0";
+
+        radarVertical.style.width =
+            "1px";
+
+        radarVertical.style.height =
+            "100%";
+
+        radarVertical.style.transform =
+            "translateX(-50%)";
+
+        radarVertical.style.background =
+            "rgba(255, 255, 255, 0.15)";
+
+        radarGrid.appendChild(
+            radarVertical
+        );
+
+        // --------------------------------------------------
+        // Radar player
+        // --------------------------------------------------
+
+        const radarPlayer =
+            document.createElement(
+                "div"
+            );
+
+        radarPlayer.style.position =
+            "absolute";
+
+        radarPlayer.style.left =
+            "50%";
+
+        radarPlayer.style.top =
+            "50%";
+
+        radarPlayer.style.width =
+            "0";
+
+        radarPlayer.style.height =
+            "0";
+
+        radarPlayer.style.borderLeft =
+            "6px solid transparent";
+
+        radarPlayer.style.borderRight =
+            "6px solid transparent";
+
+        radarPlayer.style.borderBottom =
+            "12px solid white";
+
+        radarPlayer.style.transform =
+            "translate(-50%, -50%)";
+
+        radarPlayer.style.zIndex =
+            "3";
+
+        radar.appendChild(
+            radarPlayer
+        );
+
+        const radarLabel =
+            document.createElement(
+                "div"
+            );
+
+        radarLabel.style.position =
+            "absolute";
+
+        radarLabel.style.left =
+            "50%";
+
+        radarLabel.style.top =
+            "5px";
+
+        radarLabel.style.transform =
+            "translateX(-50%)";
+
+        radarLabel.style.color =
+            "rgba(255, 255, 255, 0.65)";
+
+        radarLabel.style.fontFamily =
+            "monospace";
+
+        radarLabel.style.fontSize =
+            "10px";
+
+        radarLabel.style.zIndex =
+            "4";
+
+        radar.appendChild(
+            radarLabel
+        );
+
+        // --------------------------------------------------
+        // Radar contacts
+        // --------------------------------------------------
+
+        type RadarContact = {
+            enemy: Enemy;
+            marker: HTMLDivElement;
+        };
+
+        const radarContacts:
+            RadarContact[] =
+            enemies.map(
+                enemy => {
+                    const marker =
+                        document.createElement(
+                            "div"
+                        );
+
+                    marker.style.position =
+                        "absolute";
+
+                    marker.style.width =
+                        "8px";
+
+                    marker.style.height =
+                        "8px";
+
+                    marker.style.borderRadius =
+                        "50%";
+
+                    marker.style.transform =
+                        "translate(-50%, -50%)";
+
+                    marker.style.pointerEvents =
+                        "none";
+
+                    marker.style.display =
+                        "none";
+
+                    marker.style.boxSizing =
+                        "border-box";
+
+                    marker.style.zIndex =
+                        "2";
+
+                    radar.appendChild(
+                        marker
+                    );
+
+                    return {
+                        enemy,
+                        marker,
+                    };
+                }
+            );
+
+        // --------------------------------------------------
+        // Radar missile contacts
+        // --------------------------------------------------
+
+        const radarEnemyMissileMarkers:
+            HTMLDivElement[] = [];
+
+        const radarPlayerMissileMarkers:
+            HTMLDivElement[] = [];
+
+        const createRadarMissileMarker =
+            (
+                enemyMissile: boolean
+            ) => {
+                const marker =
+                    document.createElement(
+                        "div"
+                    );
+
+                marker.style.position =
+                    "absolute";
+
+                marker.style.width =
+                    "7px";
+
+                marker.style.height =
+                    "7px";
+
+                marker.style.transform =
+                    "translate(-50%, -50%)";
+
+                marker.style.pointerEvents =
+                    "none";
+
+                marker.style.display =
+                    "none";
+
+                marker.style.boxSizing =
+                    "border-box";
+
+                marker.style.zIndex =
+                    "2";
+
+                if (enemyMissile) {
+                    marker.style.background =
+                        "red";
+
+                    marker.style.border =
+                        "1px solid white";
+
+                    marker.style.clipPath =
+                        "polygon(50% 0%, 100% 100%, 0% 100%)";
+                } else {
+                    marker.style.background =
+                        "white";
+
+                    marker.style.border =
+                        "1px solid black";
+
+                    marker.style.borderRadius =
+                        "50%";
+                }
+
+                radar.appendChild(
+                    marker
+                );
+
+                return marker;
+            };
+
+        function ensureRadarMissileMarkers(
+            missileList: Missile[],
+            markers: HTMLDivElement[],
+            enemyMissile: boolean
+        ) {
+            while (
+                markers.length <
+                missileList.length
+                ) {
+                markers.push(
+                    createRadarMissileMarker(
+                        enemyMissile
+                    )
+                );
+            }
+        }
+
+        // --------------------------------------------------
+        // Return an aircraft to level flight
+        // --------------------------------------------------
+
+        function levelAircraft(
+            aircraft: Aircraft,
+            dt: number
+        ) {
+            const euler =
+                new THREE.Euler(
+                    0,
+                    0,
+                    0,
+                    "YXZ"
+                );
+
+            euler.setFromQuaternion(
+                aircraft.quaternion,
+                "YXZ"
+            );
+
+            const levelRate = 3;
+
+            const alpha =
+                1 -
+                Math.exp(
+                    -levelRate *
+                    dt
+                );
+
+            euler.x =
+                THREE.MathUtils.lerp(
+                    euler.x,
+                    0,
+                    alpha
+                );
+
+            euler.z =
+                THREE.MathUtils.lerp(
+                    euler.z,
+                    0,
+                    alpha
+                );
+
+            aircraft.quaternion.setFromEuler(
+                euler
+            );
+        }
+
+        // --------------------------------------------------
+        // Destroy player
+        // --------------------------------------------------
+
+        function destroyPlayer() {
+            if (playerHasDied) {
+                return;
+            }
+
+            playerHasDied = true;
+
+            deathPosition.copy(
+                player.position
+            );
+
+            deathQuaternion.copy(
+                player.quaternion
+            );
+
+            player.alive = false;
+
+            playerAircraft.visible =
+                false;
+
+            gunFiring = false;
+            locked = false;
+
+            reticle.style.display =
+                "none";
+
+            leadIndicator.style.display =
+                "none";
+
+            missileWarning.style.display =
+                "none";
+
+            missileDirection.style.display =
+                "none";
+
+            fighterHud.style.display =
+                "none";
+
+            bomberHud.style.display =
+                "none";
+
+            targetBox.style.display =
+                "none";
+
+            radar.style.display =
+                "none";
+
+            const explosion =
+                new Explosion(
+                    deathPosition
+                );
+
+            scene.add(
+                explosion.group
+            );
+
+            explosions.push(
+                explosion
+            );
+        }
+
+        // --------------------------------------------------
+        // Destroy enemy
+        // --------------------------------------------------
+
+        function destroyEnemy(
+            enemy: Enemy
+        ) {
+            if (!enemy.alive) {
+                return;
+            }
+
+            const enemyDeathPosition =
+                enemy.aircraft.position.clone();
+
+            enemy.destroy();
+
+            const explosion =
+                new Explosion(
+                    enemyDeathPosition
+                );
+
+            scene.add(
+                explosion.group
+            );
+
+            explosions.push(
+                explosion
+            );
+
+            if (
+                target.enemy ===
+                enemy
+            ) {
+                locked = false;
+                ensureValidTarget();
+            }
+        }
 
         // --------------------------------------------------
         // HUD helper
@@ -861,13 +1340,13 @@ export default function Home() {
                 ) {
                     hud.textContent =
                         `◇ LOCK ${name}\n${distance.toFixed(
-    0
-)}`;
+                            0
+                        )}`;
                 } else {
                     hud.textContent =
                         `◇ ${name}\n${distance.toFixed(
-    0
-)}`;
+                            0
+                        )}`;
                 }
             } else {
                 const dx =
@@ -908,14 +1387,327 @@ export default function Home() {
                 hud.style.top =
                     `${markerY}px`;
 
-                hud.style.transform =
-                    "translate(-50%, -50%)";
-
                 hud.textContent =
                     selected &&
                     targetLocked
                         ? "◇ LOCK"
                         : `◇ ${name}`;
+            }
+        }
+
+        // --------------------------------------------------
+        // Radar
+        // --------------------------------------------------
+
+        function updateRadar() {
+            if (!player.alive) {
+                radar.style.display =
+                    "none";
+
+                return;
+            }
+
+            radar.style.display =
+                "block";
+
+            const radarCenter = 90;
+            const radarRadius = 90;
+
+            // Find the closest alive aircraft.
+            let nearestEnemyDistance =
+                Infinity;
+
+            for (
+                const enemy of enemies
+                ) {
+                if (!enemy.alive) {
+                    continue;
+                }
+
+                const distance =
+                    enemy.aircraft.position.distanceTo(
+                        player.position
+                    );
+
+                nearestEnemyDistance =
+                    Math.min(
+                        nearestEnemyDistance,
+                        distance
+                    );
+            }
+
+            const radarRange =
+                Number.isFinite(
+                    nearestEnemyDistance
+                )
+                    ? Math.max(
+                        1000,
+                        Math.ceil(
+                            nearestEnemyDistance /
+                            1000
+                        ) * 1000
+                    )
+                    : 1000;
+
+            radarLabel.textContent =
+                `RADAR ${(
+                    radarRange / 1000
+                ).toFixed(0)} KM`;
+
+            // ------------------------------------------------
+            // Heading-only orientation
+            //
+            // This radar is deliberately 2D.
+            //
+            // It uses ONLY the aircraft's yaw/
+            // heading. Pitch and roll do not enter
+            // this calculation at all.
+            //
+            // In particular, do NOT derive these
+            // vectors from player.quaternion.
+            // ------------------------------------------------
+
+            const heading =
+                player.rotation.y;
+
+            // Aircraft forward is -Z.
+            const forwardX =
+                -Math.sin(
+                    heading
+                );
+
+            const forwardZ =
+                -Math.cos(
+                    heading
+                );
+
+            // Aircraft right is +X.
+            const rightX =
+                Math.cos(
+                    heading
+                );
+
+            const rightZ =
+                -Math.sin(
+                    heading
+                );
+
+            function updateRadarPosition(
+                position: THREE.Vector3,
+                marker: HTMLDivElement
+            ) {
+                // Only world X/Z matter.
+                // Altitude is completely ignored.
+                const dx =
+                    position.x -
+                    player.position.x;
+
+                const dz =
+                    position.z -
+                    player.position.z;
+
+                const distance =
+                    Math.sqrt(
+                        dx * dx +
+                        dz * dz
+                    );
+
+                if (
+                    distance >
+                    radarRange
+                ) {
+                    marker.style.display =
+                        "none";
+
+                    return;
+                }
+
+                // Project the world-space contact
+                // onto the aircraft's horizontal
+                // heading basis.
+                const right =
+                    dx * rightX +
+                    dz * rightZ;
+
+                const forward =
+                    dx * forwardX +
+                    dz * forwardZ;
+
+                const x =
+                    radarCenter +
+                    (
+                        right /
+                        radarRange
+                    ) *
+                    radarRadius;
+
+                const y =
+                    radarCenter -
+                    (
+                        forward /
+                        radarRange
+                    ) *
+                    radarRadius;
+
+                marker.style.left =
+                    `${x}px`;
+
+                marker.style.top =
+                    `${y}px`;
+
+                marker.style.display =
+                    "block";
+            }
+
+            // ------------------------------------------------
+            // Aircraft contacts
+            // ------------------------------------------------
+
+            for (
+                const contact of
+                radarContacts
+                ) {
+                const enemy =
+                    contact.enemy;
+
+                const marker =
+                    contact.marker;
+
+                if (!enemy.alive) {
+                    marker.style.display =
+                        "none";
+
+                    continue;
+                }
+
+                updateRadarPosition(
+                    enemy.aircraft.position,
+                    marker
+                );
+
+                if (
+                    marker.style.display ===
+                    "none"
+                ) {
+                    continue;
+                }
+
+                if (
+                    target.enemy ===
+                    enemy
+                ) {
+                    marker.style.width =
+                        "10px";
+
+                    marker.style.height =
+                        "10px";
+
+                    marker.style.border =
+                        "2px solid white";
+
+                    marker.style.borderRadius =
+                        "50%";
+
+                    marker.style.background =
+                        "transparent";
+
+                    marker.style.clipPath =
+                        "none";
+                } else {
+                    marker.style.width =
+                        "8px";
+
+                    marker.style.height =
+                        "8px";
+
+                    marker.style.border =
+                        "none";
+
+                    marker.style.borderRadius =
+                        "50%";
+
+                    marker.style.background =
+                        "red";
+
+                    marker.style.clipPath =
+                        "none";
+                }
+            }
+
+            // ------------------------------------------------
+            // Enemy missiles
+            // ------------------------------------------------
+
+            ensureRadarMissileMarkers(
+                enemyMissiles,
+                radarEnemyMissileMarkers,
+                true
+            );
+
+            for (
+                let i = 0;
+                i <
+                radarEnemyMissileMarkers.length;
+                i++
+            ) {
+                const marker =
+                    radarEnemyMissileMarkers[i];
+
+                const missile =
+                    enemyMissiles[i];
+
+                if (
+                    !missile ||
+                    !missile.alive
+                ) {
+                    marker.style.display =
+                        "none";
+
+                    continue;
+                }
+
+                updateRadarPosition(
+                    missile.position,
+                    marker
+                );
+            }
+
+            // ------------------------------------------------
+            // Player missiles
+            // ------------------------------------------------
+
+            ensureRadarMissileMarkers(
+                missiles,
+                radarPlayerMissileMarkers,
+                false
+            );
+
+            for (
+                let i = 0;
+                i <
+                radarPlayerMissileMarkers.length;
+                i++
+            ) {
+                const marker =
+                    radarPlayerMissileMarkers[i];
+
+                const missile =
+                    missiles[i];
+
+                if (
+                    !missile ||
+                    !missile.alive
+                ) {
+                    marker.style.display =
+                        "none";
+
+                    continue;
+                }
+
+                updateRadarPosition(
+                    missile.position,
+                    marker
+                );
             }
         }
 
@@ -977,12 +1769,9 @@ export default function Home() {
                 missileMesh
             );
 
-            // ------------------------------------------------
-            // Missile trail
-            // ------------------------------------------------
-
             const trail:
-                THREE.Mesh[] = [];
+                THREE.Mesh[] =
+                [];
 
             const trailLength = 25;
 
@@ -1079,9 +1868,7 @@ export default function Home() {
                 projectile.position
             );
 
-            scene.add(
-                mesh
-            );
+            scene.add(mesh);
 
             projectileMeshes.push(
                 mesh
@@ -1145,9 +1932,7 @@ export default function Home() {
         const chasePlane =
             new THREE.Object3D();
 
-        scene.add(
-            chasePlane
-        );
+        scene.add(chasePlane);
 
         const chaseOffset =
             new THREE.Vector3(
@@ -1195,34 +1980,49 @@ export default function Home() {
                 currentTime;
 
             // ------------------------------------------------
-            // Update player
+            // Player
             // ------------------------------------------------
 
-            player.update(
-                dt,
-                {
-                    pitch:
-                    controls.pitch,
+            if (player.alive) {
+                player.update(
+                    dt,
+                    {
+                        pitch:
+                        controls.pitch,
 
-                    roll:
-                    controls.roll,
+                        roll:
+                        controls.roll,
 
-                    yaw:
-                    controls.yaw,
+                        yaw:
+                        controls.yaw,
 
-                    throttle:
-                    controls.throttle,
-                }
-            );
+                        throttle:
+                        controls.throttle,
+                    }
+                );
+            }
 
             // ------------------------------------------------
-            // Update enemies
+            // Water collision
+            // ------------------------------------------------
+
+            if (
+                player.alive &&
+                player.position.y <= 0
+            ) {
+                destroyPlayer();
+            }
+
+            // ------------------------------------------------
+            // Fighter
             // ------------------------------------------------
 
             if (fighter.alive) {
                 const ai =
                     fighterAI.update(
-                        fighter.aircraft
+                        fighter.aircraft,
+                        missiles,
+                        dt
                     );
 
                 fighter.update(
@@ -1230,95 +2030,179 @@ export default function Home() {
                     ai.controls
                 );
 
-                if (ai.fireGun) {
-                    const projectile =
-                        fighter.fireGun();
-
-                    if (projectile) {
-                        enemyProjectiles.push(
-                            projectile
-                        );
-
-                        const mesh =
-                            new THREE.Mesh(
-                                projectileGeometry,
-                                projectileMaterial
-                            );
-
-                        scene.add(
-                            mesh
-                        );
-
-                        enemyProjectileMeshes.push(
-                            mesh
-                        );
-                    }
+                if (
+                    !player.alive
+                ) {
+                    levelAircraft(
+                        fighter.aircraft,
+                        dt
+                    );
                 }
 
-                if (ai.fireMissile) {
-                    const missile =
-                        fighter.fireMissile(
-                            player.position
-                        );
+                if (
+                    fighter.alive &&
+                    fighter.aircraft.position.y <=
+                    0
+                ) {
+                    destroyEnemy(
+                        fighter
+                    );
+                }
 
-                    if (missile) {
-                        enemyMissiles.push(
-                            missile
-                        );
+                if (
+                    player.alive &&
+                    fighter.alive
+                ) {
+                    if (
+                        ai.useCountermeasure
+                    ) {
+                        let closestMissile:
+                            Missile | null =
+                            null;
 
-                        const missileMesh =
-                            new THREE.Mesh(
-                                missileGeometry,
-                                missileMaterial
-                            );
-
-                        scene.add(
-                            missileMesh
-                        );
-
-                        enemyMissileMeshes.push(
-                            missileMesh
-                        );
-
-                        const trail:
-                            THREE.Mesh[] = [];
-
-                        const trailLength = 25;
+                        let closestDistance =
+                            Infinity;
 
                         for (
-                            let i = 0;
-                            i < trailLength;
-                            i++
-                        ) {
-                            const particle =
-                                new THREE.Mesh(
-                                    trailParticleGeometry,
-                                    trailParticleMaterial.clone()
+                            const missile of
+                            missiles
+                            ) {
+                            if (
+                                !missile.alive
+                            ) {
+                                continue;
+                            }
+
+                            const distance =
+                                missile.position.distanceTo(
+                                    fighter.aircraft
+                                        .position
                                 );
 
-                            particle.position.copy(
-                                missile.position
-                            );
+                            if (
+                                distance <
+                                closestDistance
+                            ) {
+                                closestDistance =
+                                    distance;
 
-                            particle.scale.setScalar(
-                                0
-                            );
-
-                            scene.add(
-                                particle
-                            );
-
-                            trail.push(
-                                particle
-                            );
+                                closestMissile =
+                                    missile;
+                            }
                         }
 
-                        enemyMissileTrails.push(
-                            trail
-                        );
+                        if (
+                            closestMissile
+                        ) {
+                            fighter.useCountermeasure(
+                                closestMissile
+                            );
+                        }
+                    }
+
+                    if (
+                        ai.fireGun
+                    ) {
+                        const projectile =
+                            fighter.fireGun();
+
+                        if (
+                            projectile
+                        ) {
+                            enemyProjectiles.push(
+                                projectile
+                            );
+
+                            const mesh =
+                                new THREE.Mesh(
+                                    projectileGeometry,
+                                    projectileMaterial
+                                );
+
+                            scene.add(mesh);
+
+                            enemyProjectileMeshes.push(
+                                mesh
+                            );
+                        }
+                    }
+
+                    if (
+                        ai.fireMissile
+                    ) {
+                        const missile =
+                            fighter.fireMissile(
+                                player.position
+                            );
+
+                        if (
+                            missile
+                        ) {
+                            enemyMissiles.push(
+                                missile
+                            );
+
+                            const missileMesh =
+                                new THREE.Mesh(
+                                    missileGeometry,
+                                    missileMaterial
+                                );
+
+                            scene.add(
+                                missileMesh
+                            );
+
+                            enemyMissileMeshes.push(
+                                missileMesh
+                            );
+
+                            const trail:
+                                THREE.Mesh[] =
+                                [];
+
+                            const trailLength =
+                                25;
+
+                            for (
+                                let i = 0;
+                                i <
+                                trailLength;
+                                i++
+                            ) {
+                                const particle =
+                                    new THREE.Mesh(
+                                        trailParticleGeometry,
+                                        trailParticleMaterial.clone()
+                                    );
+
+                                particle.position.copy(
+                                    missile.position
+                                );
+
+                                particle.scale.setScalar(
+                                    0
+                                );
+
+                                scene.add(
+                                    particle
+                                );
+
+                                trail.push(
+                                    particle
+                                );
+                            }
+
+                            enemyMissileTrails.push(
+                                trail
+                            );
+                        }
                     }
                 }
             }
+
+            // ------------------------------------------------
+            // Bomber
+            // ------------------------------------------------
 
             if (bomber.alive) {
                 bomber.update(
@@ -1330,6 +2214,25 @@ export default function Home() {
                         throttle: 0,
                     }
                 );
+
+                if (
+                    !player.alive
+                ) {
+                    levelAircraft(
+                        bomber.aircraft,
+                        dt
+                    );
+                }
+
+                if (
+                    bomber.alive &&
+                    bomber.aircraft.position.y <=
+                    0
+                ) {
+                    destroyEnemy(
+                        bomber
+                    );
+                }
             }
 
             // ------------------------------------------------
@@ -1410,7 +2313,7 @@ export default function Home() {
             }
 
             // ------------------------------------------------
-            // Gun projectiles
+            // Player gun projectiles
             // ------------------------------------------------
 
             for (
@@ -1431,12 +2334,9 @@ export default function Home() {
                     projectile.position
                 );
 
-                // ------------------------------------------------
-                // Enemy collision
-                // ------------------------------------------------
-
                 for (
-                    const enemy of enemies
+                    const enemy of
+                    enemies
                     ) {
                     if (
                         !enemy.alive
@@ -1489,10 +2389,6 @@ export default function Home() {
                         break;
                     }
                 }
-
-                // ------------------------------------------------
-                // Remove dead projectile
-                // ------------------------------------------------
 
                 if (
                     !projectile.alive
@@ -1799,10 +2695,6 @@ export default function Home() {
                     missile.quaternion
                 );
 
-                // ------------------------------------------------
-                // Update trail
-                // ------------------------------------------------
-
                 const trail =
                     missileTrails[i];
 
@@ -1847,7 +2739,8 @@ export default function Home() {
                 );
 
                 (
-                    trail[0].material as
+                    trail[0]
+                        .material as
                         THREE.MeshBasicMaterial
                 ).opacity = 0.8;
 
@@ -1872,12 +2765,9 @@ export default function Home() {
                     );
                 }
 
-                // ------------------------------------------------
-                // Enemy collision
-                // ------------------------------------------------
-
                 for (
-                    const enemy of enemies
+                    const enemy of
+                    enemies
                     ) {
                     if (
                         !enemy.alive
@@ -1892,6 +2782,11 @@ export default function Home() {
                         ) <
                         enemy.collisionRadius
                     ) {
+                        const enemyDeathPosition =
+                            enemy.aircraft
+                                .position
+                                .clone();
+
                         enemy.destroy();
 
                         missile.alive =
@@ -1899,8 +2794,7 @@ export default function Home() {
 
                         const explosion =
                             new Explosion(
-                                enemy.aircraft
-                                    .position
+                                enemyDeathPosition
                             );
 
                         scene.add(
@@ -1924,10 +2818,6 @@ export default function Home() {
                         break;
                     }
                 }
-
-                // ------------------------------------------------
-                // Remove dead missile
-                // ------------------------------------------------
 
                 if (
                     !missile.alive
@@ -1995,10 +2885,6 @@ export default function Home() {
                     missile.quaternion
                 );
 
-                // ------------------------------------------------
-                // Update trail
-                // ------------------------------------------------
-
                 const trail =
                     enemyMissileTrails[i];
 
@@ -2043,7 +2929,8 @@ export default function Home() {
                 );
 
                 (
-                    trail[0].material as
+                    trail[0]
+                        .material as
                         THREE.MeshBasicMaterial
                 ).opacity = 0.8;
 
@@ -2067,10 +2954,6 @@ export default function Home() {
                         )
                     );
                 }
-
-                // ------------------------------------------------
-                // Player collision
-                // ------------------------------------------------
 
                 if (
                     player.alive &&
@@ -2096,10 +2979,6 @@ export default function Home() {
                         destroyPlayer();
                     }
                 }
-
-                // ------------------------------------------------
-                // Remove dead missile
-                // ------------------------------------------------
 
                 if (
                     !missile.alive
@@ -2153,7 +3032,8 @@ export default function Home() {
                     "block";
 
                 let closestMissile:
-                    Missile | null = null;
+                    Missile | null =
+                    null;
 
                 let closestDistance =
                     Infinity;
@@ -2180,13 +3060,14 @@ export default function Home() {
                 }
 
                 missileWarning.textContent =
-                    enemyMissiles.length === 1
+                    enemyMissiles.length ===
+                    1
                         ? `MISSILE\n${closestDistance.toFixed(
-    0
-)}m`
+                            0
+                        )}m`
                         : `MISSILES × ${enemyMissiles.length}\n${closestDistance.toFixed(
-    0
-)}m`;
+                            0
+                        )}m`;
 
                 if (
                     closestMissile
@@ -2289,7 +3170,7 @@ export default function Home() {
             }
 
             // ------------------------------------------------
-            // Player render object
+            // Player render
             // ------------------------------------------------
 
             if (player.alive) {
@@ -2299,33 +3180,6 @@ export default function Home() {
 
                 playerAircraft.quaternion.copy(
                     player.quaternion
-                );
-            }
-
-            // ------------------------------------------------
-            // Velocity direction
-            // ------------------------------------------------
-
-            if (player.alive) {
-                const forward =
-                    new THREE.Vector3(
-                        0,
-                        0,
-                        -1
-                    ).applyQuaternion(
-                        player.quaternion
-                    );
-
-                velocityArrow.position.copy(
-                    player.position
-                );
-
-                velocityArrow.setDirection(
-                    forward
-                );
-
-                velocityArrow.setLength(
-                    20
                 );
             }
 
@@ -2370,15 +3224,38 @@ export default function Home() {
                     chaseQuaternion,
                     rotationAlpha
                 );
+            } else {
+                chasePosition
+                    .copy(chaseOffset)
+                    .applyQuaternion(
+                        deathQuaternion
+                    )
+                    .add(
+                        deathPosition
+                    );
 
-                camera.position.copy(
-                    chasePlane.position
+                chasePosition.y =
+                    Math.max(
+                        chasePosition.y,
+                        2
+                    );
+
+                chasePlane.position.copy(
+                    chasePosition
                 );
 
-                camera.quaternion.copy(
-                    chasePlane.quaternion
+                chasePlane.quaternion.copy(
+                    deathQuaternion
                 );
             }
+
+            camera.position.copy(
+                chasePlane.position
+            );
+
+            camera.quaternion.copy(
+                chasePlane.quaternion
+            );
 
             // ------------------------------------------------
             // Fighter HUD
@@ -2427,7 +3304,7 @@ export default function Home() {
             }
 
             // ------------------------------------------------
-            // Selected target box
+            // Target box
             // ------------------------------------------------
 
             if (
@@ -2520,159 +3397,10 @@ export default function Home() {
             }
 
             // ------------------------------------------------
-            // Debug
+            // Radar
             // ------------------------------------------------
 
-            if (
-                debugRef.current
-            ) {
-                const fighterDistance =
-                    fighter.aircraft.position
-                        .distanceTo(
-                            player.position
-                        );
-
-                const bomberDistance =
-                    bomber.aircraft.position
-                        .distanceTo(
-                            player.position
-                        );
-
-                debugRef.current.textContent =
-                    [
-                        `FPS: ${(
-    1 / dt
-).toFixed(0)}`,
-
-                        "",
-
-                        `PITCH:   ${controls.pitch.toFixed(
-    0
-)}`,
-
-                        `ROLL:    ${controls.roll.toFixed(
-    0
-)}`,
-
-                        `YAW:     ${controls.yaw.toFixed(
-    0
-)}`,
-
-                        `THROTTLE:${controls.throttle.toFixed(
-    0
-)}`,
-
-                        "",
-
-                        `SPEED:   ${player.speed.toFixed(
-    1
-)}`,
-
-                        `THROTTLE:${player.throttle.toFixed(
-    2
-)}`,
-
-                        "",
-
-                        `X: ${player.position.x.toFixed(
-    1
-)}`,
-
-                        `Y: ${player.position.y.toFixed(
-    1
-)}`,
-
-                        `Z: ${player.position.z.toFixed(
-    1
-)}`,
-
-                        "",
-
-                        `ROT X: ${THREE.MathUtils
-    .radToDeg(
-        player.rotation.x
-    )
-    .toFixed(1)}°`,
-
-                        `ROT Y: ${THREE.MathUtils
-    .radToDeg(
-        player.rotation.y
-    )
-    .toFixed(1)}°`,
-
-                        `ROT Z: ${THREE.MathUtils
-    .radToDeg(
-        player.rotation.z
-    )
-    .toFixed(1)}°`,
-
-                        "",
-
-                        `TARGET: ${target.name}`,
-
-                        `LOCK: ${
-    locked
-        ? "YES"
-        : "NO"
-}`,
-
-                        "",
-
-                        `PLAYER: ${
-    player.alive
-        ? "ALIVE"
-        : "DESTROYED"
-}`,
-
-                        `PLAYER HP: ${player.health}`,
-
-                        "",
-
-                        `FIGHTER: ${
-    fighter.alive
-        ? "ALIVE"
-        : "DESTROYED"
-}`,
-
-                        `FIGHTER HP: ${fighter.health}`,
-
-                        `FIGHTER DIST: ${fighterDistance.toFixed(
-    1
-)}`,
-
-                        "",
-
-                        `BOMBER: ${
-    bomber.alive
-        ? "ALIVE"
-        : "DESTROYED"
-}`,
-
-                        `BOMBER HP: ${bomber.health}`,
-
-                        `BOMBER DIST: ${bomberDistance.toFixed(
-    1
-)}`,
-
-                        "",
-
-                        `MISSILES: ${missiles.length}`,
-
-                        `ENEMY MISSILES: ${enemyMissiles.length}`,
-
-                        `GUN: ${
-    gunFiring
-        ? "FIRING"
-        : "READY"
-}`,
-
-                        `ROUNDS: ${projectiles.length}`,
-
-                        `ENEMY ROUNDS: ${enemyProjectiles.length}`,
-
-                        `EXPLOSIONS: ${explosions.length}`,
-                    ].join("\n");
-            }
+            updateRadar();
 
             // ------------------------------------------------
             // Render
@@ -2739,6 +3467,7 @@ export default function Home() {
             missileDirection.remove();
             bomberHud.remove();
             targetBox.remove();
+            radar.remove();
 
             renderer.dispose();
 
@@ -2761,25 +3490,101 @@ export default function Home() {
             }}
         >
             <div
-                ref={debugRef}
                 style={{
                     position: "absolute",
-                    whiteSpace: "pre",
-                    top: 10,
-                    left: 10,
+                    top: 14,
+                    left: 14,
                     zIndex: 10,
-                    padding: "10px",
+                    padding:
+                        "12px 16px",
                     background:
-                        "rgba(0, 0, 0, 0.7)",
+                        "rgba(0, 0, 0, 0.55)",
+                    border:
+                        "1px solid rgba(255, 255, 255, 0.35)",
                     color: "white",
                     fontFamily:
                         "monospace",
                     fontSize: "14px",
-                    lineHeight: "1.5",
+                    lineHeight: "1.6",
+                    textShadow:
+                        "0 0 3px black",
                     pointerEvents:
                         "none",
+                    minWidth: "220px",
                 }}
-            />
+            >
+                <div
+                    style={{
+                        fontWeight:
+                            "bold",
+                        marginBottom:
+                            "3px",
+                        fontSize:
+                            "15px",
+                    }}
+                >
+                    SCENARIO
+                </div>
+
+                <div
+                    style={{
+                        marginBottom:
+                            "10px",
+                    }}
+                >
+                    Eliminate the bomber
+                    <br />
+                    and its escort.
+                </div>
+
+                <div
+                    style={{
+                        borderTop:
+                            "1px solid rgba(255, 255, 255, 0.25)",
+                        paddingTop:
+                            "8px",
+                        fontWeight:
+                            "bold",
+                        marginBottom:
+                            "4px",
+                    }}
+                >
+                    CONTROLS
+                </div>
+
+                <div>
+                    ↑ / ↓ &nbsp; Pitch
+                </div>
+
+                <div>
+                    A / D &nbsp;&nbsp; Roll
+                </div>
+
+                <div>
+                    Q / E &nbsp;&nbsp; Yaw
+                </div>
+
+                <div>
+                    W / S &nbsp;&nbsp; Throttle
+                </div>
+
+                <div
+                    style={{
+                        marginTop:
+                            "6px",
+                    }}
+                >
+                    F &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Gun
+                </div>
+
+                <div>
+                    SPACE &nbsp; Missile
+                </div>
+
+                <div>
+                    TAB &nbsp;&nbsp;&nbsp; Change Target
+                </div>
+            </div>
 
             <div
                 ref={hudRef}
@@ -2792,9 +3597,12 @@ export default function Home() {
                     fontFamily:
                         "monospace",
                     fontSize: "18px",
-                    fontWeight: "bold",
-                    textAlign: "center",
-                    whiteSpace: "pre",
+                    fontWeight:
+                        "bold",
+                    textAlign:
+                        "center",
+                    whiteSpace:
+                        "pre",
                     pointerEvents:
                         "none",
                     textShadow:

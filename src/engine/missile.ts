@@ -4,16 +4,21 @@ export class Missile {
     position = new THREE.Vector3();
     quaternion = new THREE.Quaternion();
 
-    speed = 250;
+    speed = 500;
 
     turnRate =
-        THREE.MathUtils.degToRad(180);
+        THREE.MathUtils.degToRad(90);
 
     life = 5;
 
     target: THREE.Vector3 | null = null;
 
     alive = true;
+
+    // Once the target gets farther behind this angle,
+    // the missile stops trying to turn around and chase it.
+    maxGuidanceAngle =
+        THREE.MathUtils.degToRad(110);
 
     constructor(
         position: THREE.Vector3,
@@ -37,11 +42,12 @@ export class Missile {
         );
     }
 
+    loseTarget() {
+        this.target = null;
+    }
+
     update(dt: number) {
-        if (
-            !this.alive ||
-            !this.target
-        ) {
+        if (!this.alive) {
             return;
         }
 
@@ -61,56 +67,63 @@ export class Missile {
                 this.quaternion
             );
 
-        const desired =
-            this.target
-                .clone()
-                .sub(this.position);
+        if (this.target) {
+            const desired =
+                this.target
+                    .clone()
+                    .sub(this.position);
 
-        const distance =
-            desired.length();
+            const distance =
+                desired.length();
 
-        if (distance > 0.001) {
-            desired.normalize();
-        }
+            if (distance > 0.001) {
+                desired.normalize();
 
-        const angle =
-            forward.angleTo(
-                desired
-            );
-
-        if (angle > 0.0001) {
-            const axis =
-                new THREE.Vector3()
-                    .crossVectors(
-                        forward,
+                const angle =
+                    forward.angleTo(
                         desired
                     );
 
-            if (
-                axis.lengthSq() >
-                0.000001
-            ) {
-                axis.normalize();
+                // Only guide while the target is
+                // reasonably far in front of us.
+                if (
+                    angle <=
+                    this.maxGuidanceAngle
+                ) {
+                    const axis =
+                        new THREE.Vector3()
+                            .crossVectors(
+                                forward,
+                                desired
+                            );
 
-                const turn =
-                    Math.min(
-                        angle,
-                        this.turnRate * dt
-                    );
+                    if (
+                        axis.lengthSq() >
+                        0.000001
+                    ) {
+                        axis.normalize();
 
-                const rotation =
-                    new THREE.Quaternion()
-                        .setFromAxisAngle(
-                            axis,
-                            turn
-                        );
+                        const turn =
+                            Math.min(
+                                angle,
+                                this.turnRate * dt
+                            );
 
-                this.quaternion
-                    .premultiply(
-                        rotation
-                    );
+                        const rotation =
+                            new THREE.Quaternion()
+                                .setFromAxisAngle(
+                                    axis,
+                                    turn
+                                );
 
-                this.quaternion.normalize();
+                        this.quaternion
+                            .premultiply(
+                                rotation
+                            );
+
+                        this.quaternion.normalize();
+                    }
+                }
             }
         }
 
