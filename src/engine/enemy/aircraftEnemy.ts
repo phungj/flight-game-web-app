@@ -1,21 +1,20 @@
 import * as THREE from "three";
 
-import { Aircraft } from "./aircraft";
-import { GunProjectile } from "./gunProjectile";
-import { Missile } from "./missile";
+import {
+    Enemy,
+    type EnemyControls,
+    type EnemyOptions,
+} from "./enemy";
+import { Aircraft } from "../aircraft";
+import { GunProjectile } from "../gunProjectile";
+import { Missile } from "../missile";
 
-export type EnemyType =
+export type AircraftEnemyType =
     | "fighter"
     | "bomber";
 
-export type EnemyControls = {
-    pitch: number;
-    roll: number;
-    yaw: number;
-    throttle: number;
-};
-
-export type EnemyOptions = {
+export type AircraftEnemyOptions =
+    EnemyOptions & {
     countermeasures: number;
 };
 
@@ -28,19 +27,10 @@ type Flare = {
     maxLife: number;
 };
 
-export class Enemy {
-    aircraft: Aircraft;
+export class AircraftEnemy extends Enemy {
+    readonly aircraft: Aircraft;
 
-    type: EnemyType;
-
-    health: number;
-    maxHealth: number;
-
-    collisionRadius: number;
-
-    group = new THREE.Group();
-
-    alive = true;
+    readonly type: AircraftEnemyType;
 
     gunFireRate = 15;
     gunMuzzleSpeed = 500;
@@ -73,10 +63,34 @@ export class Enemy {
     private contrailLength = 40;
 
     constructor(
-        type: EnemyType,
+        type: AircraftEnemyType,
         position: THREE.Vector3,
-        options: EnemyOptions
+        options: AircraftEnemyOptions
     ) {
+        const health =
+            type === "fighter"
+                ? options.health ?? 100
+                : options.health ?? 200;
+
+        const speed =
+            type === "fighter"
+                ? options.speed ?? 140
+                : options.speed ?? 75;
+
+        const collisionRadius =
+            type === "fighter"
+                ? 5
+                : 8;
+
+        super(
+            position,
+            collisionRadius,
+            {
+                health,
+                speed,
+            }
+        );
+
         this.type = type;
 
         this.countermeasures =
@@ -86,19 +100,15 @@ export class Enemy {
             new Aircraft();
 
         this.aircraft.position.copy(
-            position
+            this.position
         );
 
-        if (type === "fighter") {
-            this.health = 100;
-            this.collisionRadius = 5;
+        this.aircraft.speed =
+            speed;
 
-            /*
-             * Enemy fighter has slightly worse
-             * handling than the player's aircraft.
-             */
-            this.aircraft.speed = 140;
-            this.aircraft.throttle = 0.5;
+        if (type === "fighter") {
+            this.aircraft.throttle =
+                0.5;
 
             this.aircraft.pitchRate =
                 THREE.MathUtils.degToRad(30);
@@ -109,7 +119,7 @@ export class Enemy {
             this.aircraft.yawRate =
                 THREE.MathUtils.degToRad(14);
 
-            this.aircraft.quaternion.setFromEuler(
+            this.quaternion.setFromEuler(
                 new THREE.Euler(
                     0,
                     Math.PI,
@@ -118,15 +128,17 @@ export class Enemy {
                 )
             );
 
+            this.aircraft.quaternion.copy(
+                this.quaternion
+            );
+
             this.createFighter();
+            this.createContrails();
         } else {
-            this.health = 200;
-            this.collisionRadius = 8;
+            this.aircraft.throttle =
+                0;
 
-            this.aircraft.speed = 75;
-            this.aircraft.throttle = 0;
-
-            this.aircraft.quaternion.setFromEuler(
+            this.quaternion.setFromEuler(
                 new THREE.Euler(
                     0,
                     0,
@@ -135,25 +147,14 @@ export class Enemy {
                 )
             );
 
+            this.aircraft.quaternion.copy(
+                this.quaternion
+            );
+
             this.createBomber();
         }
 
-        this.maxHealth =
-            this.health;
-
-        this.group.position.copy(
-            this.aircraft.position
-        );
-
-        this.group.quaternion.copy(
-            this.aircraft.quaternion
-        );
-
-        if (
-            type === "fighter"
-        ) {
-            this.createContrails();
-        }
+        this.syncTransform();
     }
 
     private createFighter() {
@@ -272,12 +273,6 @@ export class Enemy {
                 material.clone()
             );
 
-        /*
-         * These are children of the enemy group.
-         * Their positions are therefore local to
-         * the aircraft and don't depend on the
-         * group having a parent yet.
-         */
         this.group.add(
             this.contrailLeft
         );
@@ -295,10 +290,6 @@ export class Enemy {
             return;
         }
 
-        /*
-         * Contrail points are stored in local
-         * aircraft coordinates.
-         */
         const leftPoint =
             new THREE.Vector3(
                 -2.1,
@@ -352,6 +343,27 @@ export class Enemy {
                 );
     }
 
+    private syncTransform() {
+        this.position.copy(
+            this.aircraft.position
+        );
+
+        this.quaternion.copy(
+            this.aircraft.quaternion
+        );
+
+        this.speed =
+            this.aircraft.speed;
+
+        this.group.position.copy(
+            this.position
+        );
+
+        this.group.quaternion.copy(
+            this.quaternion
+        );
+    }
+
     update(
         dt: number,
         controls: EnemyControls
@@ -385,13 +397,7 @@ export class Enemy {
             controls
         );
 
-        this.group.position.copy(
-            this.aircraft.position
-        );
-
-        this.group.quaternion.copy(
-            this.aircraft.quaternion
-        );
+        this.syncTransform();
 
         if (
             this.type === "fighter"
@@ -466,7 +472,10 @@ export class Enemy {
                     trailMaterial.dispose();
                 }
 
-                this.flares.splice(i, 1);
+                this.flares.splice(
+                    i,
+                    1
+                );
 
                 continue;
             }
@@ -503,10 +512,6 @@ export class Enemy {
                     1
                 );
 
-            /*
-             * Keep the flare visually intense
-             * throughout most of its lifetime.
-             */
             flare.mesh.scale.setScalar(
                 0.9 +
                 lifeRatio * 0.5
@@ -550,30 +555,11 @@ export class Enemy {
             return;
         }
 
-        /*
-         * Alternate between the left and right
-         * dispenser positions.
-         *
-         * 0 = left
-         * 1 = right
-         * 2 = left
-         * 3 = right
-         * etc.
-         */
         const side =
             flareNumber % 2 === 0
                 ? -1
                 : 1;
 
-        /*
-         * Group the eight flares into four
-         * left/right pairs.
-         *
-         * Pair 0 = front
-         * Pair 1 = behind it
-         * Pair 2 = behind that
-         * Pair 3 = rearmost
-         */
         const pairNumber =
             Math.floor(
                 flareNumber / 2
@@ -593,19 +579,12 @@ export class Enemy {
         const worldPosition =
             localPosition
                 .applyQuaternion(
-                    this.aircraft.quaternion
+                    this.quaternion
                 )
                 .add(
-                    this.aircraft.position
+                    this.position
                 );
 
-        /*
-         * Bright red-orange flare core.
-         *
-         * Additive blending makes the flare
-         * accumulate light visually instead of
-         * looking like an ordinary red sphere.
-         */
         const mesh =
             new THREE.Mesh(
                 new THREE.SphereGeometry(
@@ -630,9 +609,6 @@ export class Enemy {
 
         parent.add(mesh);
 
-        /*
-         * White smoke trail behind the flare.
-         */
         const trailMaterial =
             new THREE.LineBasicMaterial({
                 color: 0xffffff,
@@ -661,7 +637,7 @@ export class Enemy {
                 0,
                 -1
             ).applyQuaternion(
-                this.aircraft.quaternion
+                this.quaternion
             );
 
         const right =
@@ -670,7 +646,7 @@ export class Enemy {
                 0,
                 0
             ).applyQuaternion(
-                this.aircraft.quaternion
+                this.quaternion
             );
 
         const up =
@@ -679,13 +655,9 @@ export class Enemy {
                 1,
                 0
             ).applyQuaternion(
-                this.aircraft.quaternion
+                this.quaternion
             );
 
-        /*
-         * Flares are ejected behind, downward,
-         * and outward from the aircraft.
-         */
         const velocity =
             forward
                 .clone()
@@ -737,11 +709,11 @@ export class Enemy {
                 0,
                 -1
             ).applyQuaternion(
-                this.aircraft.quaternion
+                this.quaternion
             );
 
         const launchPosition =
-            this.aircraft.position
+            this.position
                 .clone()
                 .addScaledVector(
                     forward,
@@ -752,7 +724,7 @@ export class Enemy {
             forward
                 .clone()
                 .multiplyScalar(
-                    this.aircraft.speed
+                    this.speed
                 );
 
         const projectile =
@@ -790,11 +762,11 @@ export class Enemy {
                 0,
                 -1
             ).applyQuaternion(
-                this.aircraft.quaternion
+                this.quaternion
             );
 
         const launchPosition =
-            this.aircraft.position
+            this.position
                 .clone()
                 .addScaledVector(
                     forward,
@@ -825,7 +797,9 @@ export class Enemy {
     useCountermeasure(
         missile: Missile
     ) {
-        if (!this.canUseCountermeasure()) {
+        if (
+            !this.canUseCountermeasure()
+        ) {
             return false;
         }
 
@@ -836,38 +810,18 @@ export class Enemy {
         this.countermeasureCooldown =
             this.countermeasureCooldownTime;
 
-        /*
-         * Deploy eight individual flares:
-         * four from each side.
-         */
         this.pendingFlares = 8;
         this.flareSpawnCooldown = 0;
 
         return true;
     }
 
-    takeDamage(
-        amount: number
-    ) {
+    override destroy() {
         if (!this.alive) {
             return;
         }
 
-        this.health -= amount;
-
-        if (this.health <= 0) {
-            this.health = 0;
-            this.destroy();
-        }
-    }
-
-    destroy() {
-        if (!this.alive) {
-            return;
-        }
-
-        this.health = 0;
-        this.alive = false;
+        super.destroy();
 
         this.pendingFlares = 0;
 
@@ -954,8 +908,5 @@ export class Enemy {
 
         this.contrailLeftPoints = [];
         this.contrailRightPoints = [];
-
-        this.group.visible =
-            false;
     }
 }

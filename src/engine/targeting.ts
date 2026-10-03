@@ -1,7 +1,7 @@
 import * as THREE from "three";
 
 import { Aircraft } from "@/src/engine/aircraft";
-import { Enemy } from "@/src/engine/enemy";
+import { Enemy } from "@/src/engine/enemy/enemy";
 import { Player } from "@/src/engine/player";
 
 export type Target = {
@@ -23,6 +23,10 @@ const MAX_TARGET_ANGLE =
 /**
  * Returns the full 3D angular distance between
  * the aircraft's forward direction and the target.
+ *
+ * This operates on generic target positions, so
+ * the target can be an aircraft, ship, or anything
+ * else represented by Enemy.
  */
 function getTargetAngle(
     aircraft: Aircraft,
@@ -33,7 +37,10 @@ function getTargetAngle(
             .clone()
             .sub(aircraft.position);
 
-    if (toTarget.lengthSq() < 0.000001) {
+    if (
+        toTarget.lengthSq() <
+        0.000001
+    ) {
         return 0;
     }
 
@@ -105,7 +112,7 @@ function getCandidates(
         )
         .map(target => {
             const position =
-                target.enemy.aircraft.position;
+                target.enemy.position;
 
             const distance =
                 playerAircraft.position.distanceTo(
@@ -155,15 +162,17 @@ export function selectBestTarget(
                 target,
                 angle: getTargetAngle(
                     player.aircraft,
-                    target.enemy.aircraft.position
+                    target.enemy.position
                 ),
                 distance:
                     player.aircraft.position.distanceTo(
-                        target.enemy.aircraft.position
+                        target.enemy.position
                     ),
             }));
 
-    if (candidates.length === 0) {
+    if (
+        candidates.length === 0
+    ) {
         return undefined;
     }
 
@@ -185,13 +194,18 @@ export function selectBestTarget(
                 a.angle - b.angle;
 
             if (
-                Math.abs(angleDifference) >
+                Math.abs(
+                    angleDifference
+                ) >
                 THREE.MathUtils.degToRad(1)
             ) {
                 return angleDifference;
             }
 
-            return a.distance - b.distance;
+            return (
+                a.distance -
+                b.distance
+            );
         }
     );
 
@@ -199,8 +213,8 @@ export function selectBestTarget(
 }
 
 /**
- * Select the next target by moving rightward across
- * the player's screen.
+ * Select the next target by moving rightward
+ * across the player's screen.
  */
 export function selectNextTarget(
     player: Player,
@@ -216,7 +230,9 @@ export function selectNextTarget(
             currentTarget
         );
 
-    if (candidates.length === 0) {
+    if (
+        candidates.length === 0
+    ) {
         return currentTarget;
     }
 
@@ -241,10 +257,7 @@ export function selectNextTarget(
         currentScreenX =
             getScreenPosition(
                 camera,
-                currentTarget
-                    .enemy
-                    .aircraft
-                    .position
+                currentTarget.enemy.position
             ).x;
     }
 
@@ -261,7 +274,9 @@ export function selectNextTarget(
                     b.screenX
             );
 
-    if (toRight.length > 0) {
+    if (
+        toRight.length > 0
+    ) {
         return toRight[0].target;
     }
 
@@ -292,7 +307,9 @@ export function selectPreviousTarget(
             currentTarget
         );
 
-    if (candidates.length === 0) {
+    if (
+        candidates.length === 0
+    ) {
         return currentTarget;
     }
 
@@ -317,10 +334,7 @@ export function selectPreviousTarget(
         currentScreenX =
             getScreenPosition(
                 camera,
-                currentTarget
-                    .enemy
-                    .aircraft
-                    .position
+                currentTarget.enemy.position
             ).x;
     }
 
@@ -337,7 +351,9 @@ export function selectPreviousTarget(
                     a.screenX
             );
 
-    if (toLeft.length > 0) {
+    if (
+        toLeft.length > 0
+    ) {
         return toLeft[0].target;
     }
 

@@ -3,10 +3,12 @@
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
 
-import { Aircraft } from "@/src/engine/aircraft";
 import { Controls } from "@/src/engine/controls";
-import { Enemy } from "@/src/engine/enemy";
-import { FighterAI } from "@/src/engine/fighterAI";
+import { Enemy } from "@/src/engine/enemy/enemy";
+import {
+    AircraftEnemy,
+} from "@/src/engine/enemy/aircraftEnemy";
+import { FighterAI } from "@/src/engine/enemy/fighterAI";
 import { Missile } from "@/src/engine/missile";
 import { Explosion } from "@/src/engine/explosion";
 import { GunProjectile } from "@/src/engine/gunProjectile";
@@ -260,7 +262,7 @@ export default function Game({
             level.enemies.map(
                 definition => {
                     const enemy =
-                        new Enemy(
+                        new AircraftEnemy(
                             definition.type,
                             new THREE.Vector3(
                                 ...definition.position
@@ -294,7 +296,7 @@ export default function Game({
 
         const fighterAIs =
             new Map<
-                Enemy,
+                AircraftEnemy,
                 FighterAI
             >();
 
@@ -303,8 +305,10 @@ export default function Game({
             runtimeEnemies
             ) {
             if (
-                runtimeEnemy.definition
-                    .ai === "fighter"
+                runtimeEnemy.definition.ai ===
+                "fighter" &&
+                runtimeEnemy.enemy instanceof
+                AircraftEnemy
             ) {
                 fighterAIs.set(
                     runtimeEnemy.enemy,
@@ -1236,7 +1240,7 @@ export default function Game({
         // --------------------------------------------------
 
         function levelAircraft(
-            aircraft: Aircraft,
+            enemy: AircraftEnemy,
             dt: number
         ) {
             const euler =
@@ -1248,7 +1252,7 @@ export default function Game({
                 );
 
             euler.setFromQuaternion(
-                aircraft.quaternion,
+                enemy.quaternion,
                 "YXZ"
             );
 
@@ -1276,8 +1280,22 @@ export default function Game({
                     alpha
                 );
 
-            aircraft.quaternion.setFromEuler(
+            enemy.quaternion.setFromEuler(
                 euler
+            );
+
+            /*
+             * AircraftEnemy maintains both its generic
+             * Enemy transform and its Aircraft transform.
+             * Keep both synchronized when leveling outside
+             * of AircraftEnemy.update().
+             */
+            enemy.aircraft.quaternion.copy(
+                enemy.quaternion
+            );
+
+            enemy.group.quaternion.copy(
+                enemy.quaternion
             );
         }
 
@@ -1364,9 +1382,7 @@ export default function Game({
             }
 
             const enemyDeathPosition =
-                enemy.aircraft
-                    .position
-                    .clone();
+                enemy.position.clone();
 
             enemy.destroy();
 
@@ -1400,13 +1416,13 @@ export default function Game({
 
         function updateTargetHud(
             hud: HTMLDivElement,
-            targetAircraft: Aircraft,
+            targetEnemy: Enemy,
             name: string,
             selected: boolean,
             targetLocked: boolean
         ) {
             const projected =
-                targetAircraft.position
+                targetEnemy.position
                     .clone()
                     .project(camera);
 
@@ -1437,7 +1453,7 @@ export default function Game({
                 window.innerHeight;
 
             const distance =
-                targetAircraft.position.distanceTo(
+                targetEnemy.position.distanceTo(
                     player.position
                 );
 
@@ -1549,7 +1565,7 @@ export default function Game({
                 }
 
                 const distance =
-                    enemy.aircraft.position.distanceTo(
+                    enemy.position.distanceTo(
                         player.position
                     );
 
@@ -1681,7 +1697,7 @@ export default function Game({
                 }
 
                 updateRadarPosition(
-                    enemy.aircraft.position,
+                    enemy.position,
                     marker
                 );
 
@@ -1834,8 +1850,7 @@ export default function Game({
                 new Missile(
                     launchPosition,
                     forward,
-                    target.enemy.aircraft
-                        .position
+                    target.enemy.position
                 );
 
             missiles.push(
@@ -1943,7 +1958,9 @@ export default function Game({
                     projectileMaterial
                 );
 
-            scene.add(mesh);
+            scene.add(
+                mesh
+            );
 
             projectileMeshes.push(
                 mesh
@@ -2115,20 +2132,31 @@ export default function Game({
                     continue;
                 }
 
-                const ai =
-                    fighterAIs.get(
-                        enemy
-                    );
+                const aircraftEnemy =
+                    enemy instanceof
+                    AircraftEnemy
+                        ? enemy
+                        : undefined;
 
-                if (ai) {
+                const ai =
+                    aircraftEnemy
+                        ? fighterAIs.get(
+                            aircraftEnemy
+                        )
+                        : undefined;
+
+                if (
+                    aircraftEnemy &&
+                    ai
+                ) {
                     const result =
                         ai.update(
-                            enemy.aircraft,
+                            aircraftEnemy,
                             missiles,
                             dt
                         );
 
-                    enemy.update(
+                    aircraftEnemy.update(
                         dt,
                         result.controls
                     );
@@ -2137,19 +2165,18 @@ export default function Game({
                         !player.alive
                     ) {
                         levelAircraft(
-                            enemy.aircraft,
+                            aircraftEnemy,
                             dt
                         );
                     }
 
                     if (
-                        enemy.alive &&
-                        enemy.aircraft
-                            .position.y <=
+                        aircraftEnemy.alive &&
+                        aircraftEnemy.position.y <=
                         0
                     ) {
                         destroyEnemy(
-                            enemy
+                            aircraftEnemy
                         );
 
                         continue;
@@ -2157,7 +2184,7 @@ export default function Game({
 
                     if (
                         player.alive &&
-                        enemy.alive
+                        aircraftEnemy.alive
                     ) {
                         if (
                             result.useCountermeasure
@@ -2181,8 +2208,7 @@ export default function Game({
 
                                 const distance =
                                     missile.position.distanceTo(
-                                        enemy.aircraft
-                                            .position
+                                        aircraftEnemy.position
                                     );
 
                                 if (
@@ -2200,7 +2226,7 @@ export default function Game({
                             if (
                                 closestMissile
                             ) {
-                                enemy.useCountermeasure(
+                                aircraftEnemy.useCountermeasure(
                                     closestMissile
                                 );
                             }
@@ -2210,7 +2236,7 @@ export default function Game({
                             result.fireGun
                         ) {
                             const projectile =
-                                enemy.fireGun();
+                                aircraftEnemy.fireGun();
 
                             if (
                                 projectile
@@ -2239,7 +2265,7 @@ export default function Game({
                             result.fireMissile
                         ) {
                             const missile =
-                                enemy.fireMissile(
+                                aircraftEnemy.fireMissile(
                                     player.position
                                 );
 
@@ -2314,18 +2340,18 @@ export default function Game({
                     );
 
                     if (
-                        !player.alive
+                        !player.alive &&
+                        aircraftEnemy
                     ) {
                         levelAircraft(
-                            enemy.aircraft,
+                            aircraftEnemy,
                             dt
                         );
                     }
 
                     if (
                         enemy.alive &&
-                        enemy.aircraft
-                            .position.y <=
+                        enemy.position.y <=
                         0
                     ) {
                         destroyEnemy(
@@ -2353,8 +2379,7 @@ export default function Game({
                 target.enemy.alive
             ) {
                 const toTarget =
-                    target.enemy.aircraft
-                        .position
+                    target.enemy.position
                         .clone()
                         .sub(
                             player.position
@@ -2450,8 +2475,7 @@ export default function Game({
 
                     if (
                         projectile.position.distanceTo(
-                            enemy.aircraft
-                                .position
+                            enemy.position
                         ) <
                         enemy.collisionRadius
                     ) {
@@ -2571,11 +2595,11 @@ export default function Game({
                 target &&
                 target.enemy.alive
             ) {
-                const targetAircraft =
-                    target.enemy.aircraft;
+                const targetEnemy =
+                    target.enemy;
 
                 const relativePosition =
-                    targetAircraft.position
+                    targetEnemy.position
                         .clone()
                         .sub(
                             player.position
@@ -2601,11 +2625,10 @@ export default function Game({
                         -1
                     )
                         .applyQuaternion(
-                            targetAircraft
-                                .quaternion
+                            targetEnemy.quaternion
                         )
                         .multiplyScalar(
-                            targetAircraft.speed
+                            targetEnemy.speed
                         );
 
                 const relativeVelocity =
@@ -2704,8 +2727,7 @@ export default function Game({
                     interceptTime < 5
                 ) {
                     const predictedTarget =
-                        targetAircraft
-                            .position
+                        targetEnemy.position
                             .clone()
                             .addScaledVector(
                                 targetVelocity,
@@ -2847,8 +2869,7 @@ export default function Game({
 
                     if (
                         missile.position.distanceTo(
-                            enemy.aircraft
-                                .position
+                            enemy.position
                         ) <
                         enemy.collisionRadius
                     ) {
@@ -3316,7 +3337,7 @@ export default function Game({
                 ) {
                     updateTargetHud(
                         hud,
-                        enemy.aircraft,
+                        enemy,
                         runtimeEnemy
                             .definition
                             .name,
@@ -3391,8 +3412,7 @@ export default function Game({
                 );
 
                 const toTarget =
-                    target.enemy.aircraft
-                        .position
+                    target.enemy.position
                         .clone()
                         .sub(
                             arrowPosition
@@ -3434,8 +3454,7 @@ export default function Game({
                 target.enemy.alive
             ) {
                 const projected =
-                    target.enemy.aircraft
-                        .position
+                    target.enemy.position
                         .clone()
                         .project(
                             camera

@@ -4,8 +4,12 @@ import {
     EnemyControls,
 } from "./enemy";
 
-import { Player } from "./player";
-import { Missile } from "./missile";
+import {
+    AircraftEnemy,
+} from "@/src/engine/enemy/aircraftEnemy";
+
+import { Player } from "../player";
+import { Missile } from "../missile";
 
 export type FighterAIOutput = {
     controls: EnemyControls;
@@ -34,7 +38,7 @@ export class FighterAI {
     }
 
     update(
-        fighter: Player["aircraft"],
+        enemy: AircraftEnemy,
         incomingMissiles: Missile[],
         dt: number = 1 / 60
     ): FighterAIOutput {
@@ -56,7 +60,7 @@ export class FighterAI {
 
                 debug: {
                     interceptPoint:
-                        fighter.position.clone(),
+                        enemy.position.clone(),
 
                     horizontalAngle: 0,
                     verticalAngle: 0,
@@ -84,14 +88,14 @@ export class FighterAI {
             if (
                 !missile.alive ||
                 missile.target !==
-                fighter.position
+                enemy.position
             ) {
                 continue;
             }
 
             const distance =
                 missile.position.distanceTo(
-                    fighter.position
+                    enemy.position
                 );
 
             if (
@@ -121,7 +125,7 @@ export class FighterAI {
             this.target.position
                 .clone()
                 .sub(
-                    fighter.position
+                    enemy.position
                 );
 
         const distance =
@@ -190,7 +194,7 @@ export class FighterAI {
             desiredDirection
                 .clone()
                 .applyQuaternion(
-                    fighter.quaternion
+                    enemy.quaternion
                         .clone()
                         .invert()
                 );
