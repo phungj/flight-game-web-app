@@ -5,10 +5,15 @@ import * as THREE from "three";
 
 import { Controls } from "@/src/engine/controls";
 import { Enemy } from "@/src/engine/enemy/enemy";
+
 import {
     AircraftEnemy,
 } from "@/src/engine/enemy/aircraft/aircraftEnemy";
-import { FighterAI } from "@/src/engine/enemy/aircraft/fighterAI";
+
+import {
+    FighterAI,
+} from "@/src/engine/enemy/aircraft/fighterAI";
+
 import {
     ShipEnemy,
 } from "@/src/engine/enemy/ship/shipEnemy";
@@ -16,11 +21,24 @@ import {
 import {
     ShipAI,
 } from "@/src/engine/enemy/ship/shipAI";
+
+import {
+    GroundEnemy,
+} from "@/src/engine/enemy/ground/groundEnemy";
+
+import {
+    GroundAI,
+} from "@/src/engine/enemy/ground/groundAI";
+
 import { Missile } from "@/src/engine/missile";
 import { Explosion } from "@/src/engine/explosion";
 import { GunProjectile } from "@/src/engine/gunProjectile";
 import { Player } from "@/src/engine/player";
-import type { LevelDefinition } from "@/src/levels/types";
+
+import type {
+    LevelDefinition,
+    LevelObjectDefinition,
+} from "@/src/levels/types";
 
 import {
     selectBestTarget,
@@ -34,7 +52,9 @@ type GameProps = {
 };
 
 type RuntimeEnemy = {
-    definition: LevelDefinition["enemies"][number];
+    definition:
+        LevelDefinition["enemies"][number];
+
     enemy: Enemy;
 };
 
@@ -131,8 +151,16 @@ export default function Game({
         );
 
         // --------------------------------------------------
-        // Water
+        // Terrain
         // --------------------------------------------------
+
+        const terrainMaterial =
+            new THREE.MeshStandardMaterial({
+                color:
+                    level.terrain.type === "land"
+                        ? 0x4f7a3a
+                        : 0x2874a6,
+            });
 
         const ground =
             new THREE.Mesh(
@@ -140,9 +168,7 @@ export default function Game({
                     100000,
                     100000
                 ),
-                new THREE.MeshStandardMaterial({
-                    color: 0x2874a6,
-                })
+                terrainMaterial
             );
 
         ground.rotation.x =
@@ -261,6 +287,249 @@ export default function Game({
         );
 
         // --------------------------------------------------
+        // Level objects
+        // --------------------------------------------------
+
+        const levelObjects:
+            THREE.Object3D[] =
+            [];
+
+        const objectMaterials = {
+            tent:
+                new THREE.MeshStandardMaterial({
+                    color: 0x8f9b70,
+                }),
+
+            container:
+                new THREE.MeshStandardMaterial({
+                    color: 0x6b7378,
+                }),
+
+            fuelTank:
+                new THREE.MeshStandardMaterial({
+                    color: 0xb8b8a0,
+                }),
+
+            building:
+                new THREE.MeshStandardMaterial({
+                    color: 0x77736a,
+                }),
+
+            crate:
+                new THREE.MeshStandardMaterial({
+                    color: 0x8a633f,
+                }),
+        };
+
+        function createLevelObject(
+            definition: LevelObjectDefinition
+        ): THREE.Group {
+            const group =
+                new THREE.Group();
+
+            switch (
+                definition.type
+                ) {
+                case "tent": {
+                    /*
+                     * --------------------------------------------------
+                     * Field tent
+                     * --------------------------------------------------
+                     *
+                     * Roughly 12 wide, 5 tall, and 18 long.
+                     */
+                    const mesh =
+                        new THREE.Mesh(
+                            new THREE.ConeGeometry(
+                                6,
+                                5,
+                                4
+                            ),
+                            objectMaterials.tent
+                        );
+
+                    mesh.rotation.y =
+                        Math.PI / 4;
+
+                    mesh.scale.set(
+                        1,
+                        1,
+                        1.5
+                    );
+
+                    mesh.position.y =
+                        2.5;
+
+                    group.add(
+                        mesh
+                    );
+
+                    break;
+                }
+
+                case "container": {
+                    /*
+                     * --------------------------------------------------
+                     * Shipping container
+                     * --------------------------------------------------
+                     */
+                    const mesh =
+                        new THREE.Mesh(
+                            new THREE.BoxGeometry(
+                                10,
+                                9,
+                                25
+                            ),
+                            objectMaterials.container
+                        );
+
+                    mesh.position.y =
+                        4.5;
+
+                    group.add(
+                        mesh
+                    );
+
+                    break;
+                }
+
+                case "fuel-tank": {
+                    /*
+                     * --------------------------------------------------
+                     * Fuel tank
+                     * --------------------------------------------------
+                     *
+                     * Long horizontal cylindrical tank.
+                     */
+                    const mesh =
+                        new THREE.Mesh(
+                            new THREE.CylinderGeometry(
+                                6,
+                                6,
+                                20,
+                                16
+                            ),
+                            objectMaterials.fuelTank
+                        );
+
+                    mesh.rotation.z =
+                        Math.PI / 2;
+
+                    mesh.position.y =
+                        6;
+
+                    group.add(
+                        mesh
+                    );
+
+                    break;
+                }
+
+                case "building": {
+                    /*
+                     * --------------------------------------------------
+                     * Depot building
+                     * --------------------------------------------------
+                     */
+                    const mesh =
+                        new THREE.Mesh(
+                            new THREE.BoxGeometry(
+                                30,
+                                20,
+                                40
+                            ),
+                            objectMaterials.building
+                        );
+
+                    mesh.position.y =
+                        10;
+
+                    group.add(
+                        mesh
+                    );
+
+                    break;
+                }
+
+                case "crate": {
+                    /*
+                     * --------------------------------------------------
+                     * Crate
+                     * --------------------------------------------------
+                     */
+                    const mesh =
+                        new THREE.Mesh(
+                            new THREE.BoxGeometry(
+                                6,
+                                6,
+                                6
+                            ),
+                            objectMaterials.crate
+                        );
+
+                    mesh.position.y =
+                        3;
+
+                    group.add(
+                        mesh
+                    );
+
+                    break;
+                }
+
+                default:
+                    throw new Error(
+                        `Unknown level object type: ${
+                            (
+                                definition as
+                                    LevelObjectDefinition
+                            ).type
+                        }`
+                    );
+            }
+
+            group.position.set(
+                ...definition.position
+            );
+
+            if (
+                definition.rotation !==
+                undefined
+            ) {
+                group.rotation.y =
+                    definition.rotation;
+            }
+
+            if (
+                definition.scale
+            ) {
+                group.scale.set(
+                    ...definition.scale
+                );
+            }
+
+            return group;
+        }
+
+        for (
+            const definition of
+            level.objects
+            ) {
+            const object =
+                createLevelObject(
+                    definition
+                );
+
+            scene.add(
+                object
+            );
+
+            levelObjects.push(
+                object
+            );
+        }
+
+        // --------------------------------------------------
         // Enemies
         // --------------------------------------------------
 
@@ -296,6 +565,18 @@ export default function Game({
                         case "cruiser":
                             enemy =
                                 new ShipEnemy(
+                                    definition.type,
+                                    position,
+                                    {}
+                                );
+                            break;
+
+                        case "truck":
+                        case "tank":
+                        case "aa":
+                        case "sam":
+                            enemy =
+                                new GroundEnemy(
                                     definition.type,
                                     position,
                                     {}
@@ -384,6 +665,35 @@ export default function Game({
         }
 
         // --------------------------------------------------
+        // Ground AI
+        // --------------------------------------------------
+
+        const groundAIs =
+            new Map<
+                GroundEnemy,
+                GroundAI
+            >();
+
+        for (
+            const runtimeEnemy of
+            runtimeEnemies
+            ) {
+            if (
+                runtimeEnemy.definition.ai ===
+                "ground" &&
+                runtimeEnemy.enemy instanceof
+                GroundEnemy
+            ) {
+                groundAIs.set(
+                    runtimeEnemy.enemy,
+                    new GroundAI(
+                        player
+                    )
+                );
+            }
+        }
+
+        // --------------------------------------------------
         // Target selection
         // --------------------------------------------------
 
@@ -393,6 +703,7 @@ export default function Game({
                 runtimeEnemy => ({
                     enemy:
                     runtimeEnemy.enemy,
+
                     name:
                     runtimeEnemy
                         .definition
@@ -547,9 +858,9 @@ export default function Game({
 
         /*
          * Damage is kept alongside enemyProjectiles so
-         * aircraft guns and ship CIWS can share the same
-         * projectile implementation while using different
-         * damage values.
+         * aircraft guns, ship CIWS, and ground AA can
+         * share the same projectile implementation while
+         * using different damage values.
          */
         const enemyProjectileDamages:
             number[] =
@@ -2142,6 +2453,146 @@ export default function Game({
         }
 
         // --------------------------------------------------
+        // Ground AA
+        // --------------------------------------------------
+
+        function fireGroundAA(
+            enemy: GroundEnemy
+        ) {
+            if (
+                !player.alive ||
+                !enemy.alive
+            ) {
+                return;
+            }
+
+            const direction =
+                player.position
+                    .clone()
+                    .sub(
+                        enemy.position
+                    );
+
+            if (
+                direction.lengthSq() <
+                0.000001
+            ) {
+                return;
+            }
+
+            direction.normalize();
+
+            const launchPosition =
+                enemy.position
+                    .clone()
+                    .addScaledVector(
+                        direction,
+                        4
+                    );
+
+            launchPosition.y +=
+                3;
+
+            const projectileVelocity =
+                direction
+                    .clone()
+                    .multiplyScalar(
+                        500
+                    );
+
+            const projectile =
+                new GunProjectile(
+                    launchPosition,
+                    direction,
+                    projectileVelocity
+                );
+
+            enemyProjectiles.push(
+                projectile
+            );
+
+            enemyProjectileDamages.push(
+                enemy.aaDamage
+            );
+
+            const mesh =
+                new THREE.Mesh(
+                    projectileGeometry,
+                    projectileMaterial
+                );
+
+            scene.add(
+                mesh
+            );
+
+            enemyProjectileMeshes.push(
+                mesh
+            );
+        }
+
+        // --------------------------------------------------
+        // Launch enemy missile
+        // --------------------------------------------------
+
+        function launchEnemyMissile(
+            missile: Missile
+        ) {
+            enemyMissiles.push(
+                missile
+            );
+
+            const missileMesh =
+                new THREE.Mesh(
+                    missileGeometry,
+                    missileMaterial
+                );
+
+            scene.add(
+                missileMesh
+            );
+
+            enemyMissileMeshes.push(
+                missileMesh
+            );
+
+            const trail:
+                THREE.Mesh[] =
+                [];
+
+            for (
+                let i = 0;
+                i < 25;
+                i++
+            ) {
+                const particle =
+                    new THREE.Mesh(
+                        trailParticleGeometry,
+                        trailParticleMaterial.clone()
+                    );
+
+                particle.position.copy(
+                    missile.position
+                );
+
+                particle.scale.setScalar(
+                    0
+                );
+
+                scene.add(
+                    particle
+                );
+
+                trail.push(
+                    particle
+                );
+            }
+
+            enemyMissileTrails.push(
+                trail
+            );
+        }
+
+        // --------------------------------------------------
         // Input
         // --------------------------------------------------
 
@@ -2448,58 +2899,8 @@ export default function Game({
                                 if (
                                     missile
                                 ) {
-                                    enemyMissiles.push(
+                                    launchEnemyMissile(
                                         missile
-                                    );
-
-                                    const missileMesh =
-                                        new THREE.Mesh(
-                                            missileGeometry,
-                                            missileMaterial
-                                        );
-
-                                    scene.add(
-                                        missileMesh
-                                    );
-
-                                    enemyMissileMeshes.push(
-                                        missileMesh
-                                    );
-
-                                    const trail:
-                                        THREE.Mesh[] =
-                                        [];
-
-                                    for (
-                                        let i = 0;
-                                        i < 25;
-                                        i++
-                                    ) {
-                                        const particle =
-                                            new THREE.Mesh(
-                                                trailParticleGeometry,
-                                                trailParticleMaterial.clone()
-                                            );
-
-                                        particle.position.copy(
-                                            missile.position
-                                        );
-
-                                        particle.scale.setScalar(
-                                            0
-                                        );
-
-                                        scene.add(
-                                            particle
-                                        );
-
-                                        trail.push(
-                                            particle
-                                        );
-                                    }
-
-                                    enemyMissileTrails.push(
-                                        trail
                                     );
                                 }
                             }
@@ -2584,58 +2985,8 @@ export default function Game({
                             if (
                                 missile
                             ) {
-                                enemyMissiles.push(
+                                launchEnemyMissile(
                                     missile
-                                );
-
-                                const missileMesh =
-                                    new THREE.Mesh(
-                                        missileGeometry,
-                                        missileMaterial
-                                    );
-
-                                scene.add(
-                                    missileMesh
-                                );
-
-                                enemyMissileMeshes.push(
-                                    missileMesh
-                                );
-
-                                const trail:
-                                    THREE.Mesh[] =
-                                    [];
-
-                                for (
-                                    let i = 0;
-                                    i < 25;
-                                    i++
-                                ) {
-                                    const particle =
-                                        new THREE.Mesh(
-                                            trailParticleGeometry,
-                                            trailParticleMaterial.clone()
-                                        );
-
-                                    particle.position.copy(
-                                        missile.position
-                                    );
-
-                                    particle.scale.setScalar(
-                                        0
-                                    );
-
-                                    scene.add(
-                                        particle
-                                    );
-
-                                    trail.push(
-                                        particle
-                                    );
-                                }
-
-                                enemyMissileTrails.push(
-                                    trail
                                 );
                             }
                         }
@@ -2648,6 +2999,94 @@ export default function Game({
                             fireShipCIWS(
                                 enemy
                             );
+                        }
+                    } else {
+                        enemy.update(
+                            dt,
+                            {
+                                pitch: 0,
+                                roll: 0,
+                                yaw: 0,
+                                throttle: 0,
+                            }
+                        );
+                    }
+
+                    continue;
+                }
+
+                // --------------------------------------------
+                // Ground enemies
+                // --------------------------------------------
+
+                if (
+                    enemy instanceof
+                    GroundEnemy
+                ) {
+                    const ai =
+                        groundAIs.get(
+                            enemy
+                        );
+
+                    if (ai) {
+                        const result =
+                            ai.update(
+                                enemy,
+                                missiles,
+                                dt
+                            );
+
+                        enemy.update(
+                            dt,
+                            result.controls
+                        );
+
+                        if (
+                            player.alive &&
+                            enemy.alive &&
+                            result.missileTarget
+                        ) {
+                            const missile =
+                                enemy.fireMissile(
+                                    result
+                                        .missileTarget
+                                        .position
+                                );
+
+                            if (
+                                missile
+                            ) {
+                                launchEnemyMissile(
+                                    missile
+                                );
+                            }
+                        }
+
+                        if (
+                            player.alive &&
+                            enemy.alive &&
+                            result.aaTarget
+                        ) {
+                            const rounds =
+                                enemy.getAARounds(
+                                    dt
+                                );
+
+                            for (
+                                let i = 0;
+                                i < rounds;
+                                i++
+                            ) {
+                                if (
+                                    enemy.canFireAA()
+                                ) {
+                                    enemy.fireAA();
+
+                                    fireGroundAA(
+                                        enemy
+                                    );
+                                }
+                            }
                         }
                     } else {
                         enemy.update(
@@ -3954,12 +4393,34 @@ export default function Game({
             targetArrowShaft.geometry.dispose();
             targetArrowMaterial.dispose();
 
-            ground.geometry.dispose();
+            for (
+                const object of
+                levelObjects
+                ) {
+                object.traverse(
+                    child => {
+                        if (
+                            child instanceof
+                            THREE.Mesh
+                        ) {
+                            child.geometry.dispose();
+                        }
+                    }
+                );
 
-            (
-                ground.material as
-                    THREE.Material
-            ).dispose();
+                scene.remove(
+                    object
+                );
+            }
+
+            objectMaterials.tent.dispose();
+            objectMaterials.container.dispose();
+            objectMaterials.fuelTank.dispose();
+            objectMaterials.building.dispose();
+            objectMaterials.crate.dispose();
+
+            ground.geometry.dispose();
+            terrainMaterial.dispose();
 
             missileGeometry.dispose();
             missileMaterial.dispose();

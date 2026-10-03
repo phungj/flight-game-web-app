@@ -3,7 +3,7 @@ import { Aircraft } from "./aircraft";
 export class Player {
     aircraft: Aircraft;
 
-    health = 100000000;
+    health = 100;
     maxHealth = 100;
 
     collisionRadius = 5;
