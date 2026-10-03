@@ -7,8 +7,15 @@ import { Controls } from "@/src/engine/controls";
 import { Enemy } from "@/src/engine/enemy/enemy";
 import {
     AircraftEnemy,
-} from "@/src/engine/enemy/aircraftEnemy";
-import { FighterAI } from "@/src/engine/enemy/fighterAI";
+} from "@/src/engine/enemy/aircraft/aircraftEnemy";
+import { FighterAI } from "@/src/engine/enemy/aircraft/fighterAI";
+import {
+    ShipEnemy,
+} from "@/src/engine/enemy/ship/shipEnemy";
+
+import {
+    ShipAI,
+} from "@/src/engine/enemy/ship/shipAI";
 import { Missile } from "@/src/engine/missile";
 import { Explosion } from "@/src/engine/explosion";
 import { GunProjectile } from "@/src/engine/gunProjectile";
@@ -261,17 +268,45 @@ export default function Game({
             RuntimeEnemy[] =
             level.enemies.map(
                 definition => {
-                    const enemy =
-                        new AircraftEnemy(
-                            definition.type,
-                            new THREE.Vector3(
-                                ...definition.position
-                            ),
-                            {
-                                countermeasures:
-                                definition.countermeasures,
-                            }
+                    const position =
+                        new THREE.Vector3(
+                            ...definition.position
                         );
+
+                    let enemy: Enemy;
+
+                    switch (
+                        definition.type
+                        ) {
+                        case "fighter":
+                        case "bomber":
+                            enemy =
+                                new AircraftEnemy(
+                                    definition.type,
+                                    position,
+                                    {
+                                        countermeasures:
+                                        definition.countermeasures,
+                                    }
+                                );
+                            break;
+
+                        case "supply":
+                        case "destroyer":
+                        case "cruiser":
+                            enemy =
+                                new ShipEnemy(
+                                    definition.type,
+                                    position,
+                                    {}
+                                );
+                            break;
+
+                        default:
+                            throw new Error(
+                                `Unknown enemy type: ${definition.type}`
+                            );
+                    }
 
                     scene.add(
                         enemy.group
@@ -320,6 +355,35 @@ export default function Game({
         }
 
         // --------------------------------------------------
+        // Ship AI
+        // --------------------------------------------------
+
+        const shipAIs =
+            new Map<
+                ShipEnemy,
+                ShipAI
+            >();
+
+        for (
+            const runtimeEnemy of
+            runtimeEnemies
+            ) {
+            if (
+                runtimeEnemy.definition.ai ===
+                "ship" &&
+                runtimeEnemy.enemy instanceof
+                ShipEnemy
+            ) {
+                shipAIs.set(
+                    runtimeEnemy.enemy,
+                    new ShipAI(
+                        player
+                    )
+                );
+            }
+        }
+
+        // --------------------------------------------------
         // Target selection
         // --------------------------------------------------
 
@@ -336,10 +400,6 @@ export default function Game({
                 })
             );
 
-        /*
-         * The initial target is chosen based on spatial
-         * position rather than array order.
-         */
         let target =
             selectBestTarget(
                 player,
@@ -483,6 +543,16 @@ export default function Game({
 
         const enemyProjectileMeshes:
             THREE.Mesh[] =
+            [];
+
+        /*
+         * Damage is kept alongside enemyProjectiles so
+         * aircraft guns and ship CIWS can share the same
+         * projectile implementation while using different
+         * damage values.
+         */
+        const enemyProjectileDamages:
+            number[] =
             [];
 
         const projectileGeometry =
@@ -1284,12 +1354,6 @@ export default function Game({
                 euler
             );
 
-            /*
-             * AircraftEnemy maintains both its generic
-             * Enemy transform and its Aircraft transform.
-             * Keep both synchronized when leveling outside
-             * of AircraftEnemy.update().
-             */
             enemy.aircraft.quaternion.copy(
                 enemy.quaternion
             );
@@ -1594,9 +1658,6 @@ export default function Game({
                     radarRange /
                     1000
                 ).toFixed(0)} KM`;
-
-            // Heading only.
-            // Pitch, roll, and altitude are ignored.
 
             const heading =
                 player.rotation.y;
@@ -1968,6 +2029,119 @@ export default function Game({
         }
 
         // --------------------------------------------------
+        // Ship CIWS
+        // --------------------------------------------------
+
+        function fireShipCIWS(
+            enemy: ShipEnemy
+        ) {
+            if (
+                !player.alive ||
+                !enemy.alive
+            ) {
+                return;
+            }
+
+            if (
+                !enemy.canFireCIWS()
+            ) {
+                return;
+            }
+
+            const direction =
+                player.position
+                    .clone()
+                    .sub(
+                        enemy.position
+                    );
+
+            if (
+                direction.lengthSq() <
+                0.000001
+            ) {
+                return;
+            }
+
+            direction.normalize();
+
+            const launchPosition =
+                enemy.position
+                    .clone()
+                    .addScaledVector(
+                        direction,
+                        10
+                    );
+
+            launchPosition.y += 8;
+
+            /*
+             * Add the ship's own velocity to the
+             * projectile. The CIWS round is still fired
+             * toward the player, but the moving ship
+             * contributes its existing velocity.
+             */
+            const shipForward =
+                new THREE.Vector3(
+                    0,
+                    0,
+                    -1
+                ).applyQuaternion(
+                    enemy.quaternion
+                );
+
+            const shipVelocity =
+                shipForward
+                    .multiplyScalar(
+                        enemy.speed
+                    );
+
+            const ciwsVelocity =
+                direction
+                    .clone()
+                    .multiplyScalar(
+                        500
+                    )
+                    .add(
+                        shipVelocity
+                    );
+
+            const projectile =
+                new GunProjectile(
+                    launchPosition,
+                    direction,
+                    ciwsVelocity
+                );
+
+            if (
+                !enemy.fireCIWS()
+            ) {
+                return;
+            }
+
+            enemyProjectiles.push(
+                projectile
+            );
+
+            enemyProjectileDamages.push(
+                enemy.ciwsDamage
+            );
+
+            const mesh =
+                new THREE.Mesh(
+                    projectileGeometry,
+                    projectileMaterial
+                );
+
+            scene.add(
+                mesh
+            );
+
+            enemyProjectileMeshes.push(
+                mesh
+            );
+        }
+
+        // --------------------------------------------------
         // Input
         // --------------------------------------------------
 
@@ -2132,141 +2306,279 @@ export default function Game({
                     continue;
                 }
 
-                const aircraftEnemy =
-                    enemy instanceof
-                    AircraftEnemy
-                        ? enemy
-                        : undefined;
-
-                const ai =
-                    aircraftEnemy
-                        ? fighterAIs.get(
-                            aircraftEnemy
-                        )
-                        : undefined;
+                // --------------------------------------------
+                // Aircraft
+                // --------------------------------------------
 
                 if (
-                    aircraftEnemy &&
-                    ai
+                    enemy instanceof
+                    AircraftEnemy
                 ) {
-                    const result =
-                        ai.update(
-                            aircraftEnemy,
-                            missiles,
-                            dt
+                    const ai =
+                        fighterAIs.get(
+                            enemy
                         );
 
-                    aircraftEnemy.update(
+                    if (ai) {
+                        const result =
+                            ai.update(
+                                enemy,
+                                missiles,
+                                dt
+                            );
+
+                        enemy.update(
+                            dt,
+                            result.controls
+                        );
+
+                        if (
+                            !player.alive
+                        ) {
+                            levelAircraft(
+                                enemy,
+                                dt
+                            );
+                        }
+
+                        if (
+                            enemy.alive &&
+                            enemy.position.y <= 0
+                        ) {
+                            destroyEnemy(
+                                enemy
+                            );
+
+                            continue;
+                        }
+
+                        if (
+                            player.alive &&
+                            enemy.alive
+                        ) {
+                            if (
+                                result.useCountermeasure
+                            ) {
+                                let closestMissile:
+                                    Missile | null =
+                                    null;
+
+                                let closestDistance =
+                                    Infinity;
+
+                                for (
+                                    const missile of
+                                    missiles
+                                    ) {
+                                    if (
+                                        !missile.alive
+                                    ) {
+                                        continue;
+                                    }
+
+                                    const distance =
+                                        missile.position.distanceTo(
+                                            enemy.position
+                                        );
+
+                                    if (
+                                        distance <
+                                        closestDistance
+                                    ) {
+                                        closestDistance =
+                                            distance;
+
+                                        closestMissile =
+                                            missile;
+                                    }
+                                }
+
+                                if (
+                                    closestMissile
+                                ) {
+                                    enemy.useCountermeasure(
+                                        closestMissile
+                                    );
+                                }
+                            }
+
+                            if (
+                                result.gunTarget
+                            ) {
+                                const projectile =
+                                    enemy.fireGun();
+
+                                if (
+                                    projectile
+                                ) {
+                                    enemyProjectiles.push(
+                                        projectile
+                                    );
+
+                                    enemyProjectileDamages.push(
+                                        10
+                                    );
+
+                                    const mesh =
+                                        new THREE.Mesh(
+                                            projectileGeometry,
+                                            projectileMaterial
+                                        );
+
+                                    scene.add(
+                                        mesh
+                                    );
+
+                                    enemyProjectileMeshes.push(
+                                        mesh
+                                    );
+                                }
+                            }
+
+                            if (
+                                result.missileTarget
+                            ) {
+                                const missile =
+                                    enemy.fireMissile(
+                                        result
+                                            .missileTarget
+                                            .position
+                                    );
+
+                                if (
+                                    missile
+                                ) {
+                                    enemyMissiles.push(
+                                        missile
+                                    );
+
+                                    const missileMesh =
+                                        new THREE.Mesh(
+                                            missileGeometry,
+                                            missileMaterial
+                                        );
+
+                                    scene.add(
+                                        missileMesh
+                                    );
+
+                                    enemyMissileMeshes.push(
+                                        missileMesh
+                                    );
+
+                                    const trail:
+                                        THREE.Mesh[] =
+                                        [];
+
+                                    for (
+                                        let i = 0;
+                                        i < 25;
+                                        i++
+                                    ) {
+                                        const particle =
+                                            new THREE.Mesh(
+                                                trailParticleGeometry,
+                                                trailParticleMaterial.clone()
+                                            );
+
+                                        particle.position.copy(
+                                            missile.position
+                                        );
+
+                                        particle.scale.setScalar(
+                                            0
+                                        );
+
+                                        scene.add(
+                                            particle
+                                        );
+
+                                        trail.push(
+                                            particle
+                                        );
+                                    }
+
+                                    enemyMissileTrails.push(
+                                        trail
+                                    );
+                                }
+                            }
+                        }
+
+                        continue;
+                    }
+
+                    /*
+                     * Aircraft without an AI, such as the
+                     * current bomber.
+                     */
+                    enemy.update(
                         dt,
-                        result.controls
+                        {
+                            pitch: 0,
+                            roll: 0,
+                            yaw: 0,
+                            throttle: 0,
+                        }
                     );
 
                     if (
                         !player.alive
                     ) {
                         levelAircraft(
-                            aircraftEnemy,
+                            enemy,
                             dt
                         );
                     }
 
                     if (
-                        aircraftEnemy.alive &&
-                        aircraftEnemy.position.y <=
-                        0
+                        enemy.alive &&
+                        enemy.position.y <= 0
                     ) {
                         destroyEnemy(
-                            aircraftEnemy
+                            enemy
                         );
-
-                        continue;
                     }
 
-                    if (
-                        player.alive &&
-                        aircraftEnemy.alive
-                    ) {
-                        if (
-                            result.useCountermeasure
-                        ) {
-                            let closestMissile:
-                                Missile | null =
-                                null;
+                    continue;
+                }
 
-                            let closestDistance =
-                                Infinity;
+                // --------------------------------------------
+                // Ships
+                // --------------------------------------------
 
-                            for (
-                                const missile of
-                                missiles
-                                ) {
-                                if (
-                                    !missile.alive
-                                ) {
-                                    continue;
-                                }
+                if (
+                    enemy instanceof
+                    ShipEnemy
+                ) {
+                    const ai =
+                        shipAIs.get(
+                            enemy
+                        );
 
-                                const distance =
-                                    missile.position.distanceTo(
-                                        aircraftEnemy.position
-                                    );
+                    if (ai) {
+                        const result =
+                            ai.update(
+                                enemy,
+                                missiles,
+                                dt
+                            );
 
-                                if (
-                                    distance <
-                                    closestDistance
-                                ) {
-                                    closestDistance =
-                                        distance;
-
-                                    closestMissile =
-                                        missile;
-                                }
-                            }
-
-                            if (
-                                closestMissile
-                            ) {
-                                aircraftEnemy.useCountermeasure(
-                                    closestMissile
-                                );
-                            }
-                        }
+                        enemy.update(
+                            dt,
+                            result.controls
+                        );
 
                         if (
-                            result.fireGun
-                        ) {
-                            const projectile =
-                                aircraftEnemy.fireGun();
-
-                            if (
-                                projectile
-                            ) {
-                                enemyProjectiles.push(
-                                    projectile
-                                );
-
-                                const mesh =
-                                    new THREE.Mesh(
-                                        projectileGeometry,
-                                        projectileMaterial
-                                    );
-
-                                scene.add(
-                                    mesh
-                                );
-
-                                enemyProjectileMeshes.push(
-                                    mesh
-                                );
-                            }
-                        }
-
-                        if (
-                            result.fireMissile
+                            player.alive &&
+                            enemy.alive &&
+                            result.missileTarget
                         ) {
                             const missile =
-                                aircraftEnemy.fireMissile(
-                                    player.position
+                                enemy.fireMissile(
+                                    result
+                                        .missileTarget
+                                        .position
                                 );
 
                             if (
@@ -2327,38 +2639,44 @@ export default function Game({
                                 );
                             }
                         }
-                    }
-                } else {
-                    enemy.update(
-                        dt,
-                        {
-                            pitch: 0,
-                            roll: 0,
-                            yaw: 0,
-                            throttle: 0,
+
+                        if (
+                            player.alive &&
+                            enemy.alive &&
+                            result.ciwsTarget
+                        ) {
+                            fireShipCIWS(
+                                enemy
+                            );
                         }
-                    );
-
-                    if (
-                        !player.alive &&
-                        aircraftEnemy
-                    ) {
-                        levelAircraft(
-                            aircraftEnemy,
-                            dt
+                    } else {
+                        enemy.update(
+                            dt,
+                            {
+                                pitch: 0,
+                                roll: 0,
+                                yaw: 0,
+                                throttle: 0,
+                            }
                         );
                     }
 
-                    if (
-                        enemy.alive &&
-                        enemy.position.y <=
-                        0
-                    ) {
-                        destroyEnemy(
-                            enemy
-                        );
-                    }
+                    continue;
                 }
+
+                // --------------------------------------------
+                // Generic enemy fallback
+                // --------------------------------------------
+
+                enemy.update(
+                    dt,
+                    {
+                        pitch: 0,
+                        roll: 0,
+                        yaw: 0,
+                        throttle: 0,
+                    }
+                );
             }
 
             // ------------------------------------------------
@@ -2542,6 +2860,10 @@ export default function Game({
                     projectile.position
                 );
 
+                const damage =
+                    enemyProjectileDamages[i] ??
+                    10;
+
                 if (
                     player.alive &&
                     projectile.position.distanceTo(
@@ -2556,7 +2878,7 @@ export default function Game({
                         player.alive;
 
                     player.takeDamage(
-                        10
+                        damage
                     );
 
                     if (
@@ -2580,6 +2902,11 @@ export default function Game({
                     );
 
                     enemyProjectileMeshes.splice(
+                        i,
+                        1
+                    );
+
+                    enemyProjectileDamages.splice(
                         i,
                         1
                     );

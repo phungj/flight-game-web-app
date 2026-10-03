@@ -4,10 +4,10 @@ import {
     Enemy,
     type EnemyControls,
     type EnemyOptions,
-} from "./enemy";
-import { Aircraft } from "../aircraft";
-import { GunProjectile } from "../gunProjectile";
-import { Missile } from "../missile";
+} from "../enemy";
+import { Aircraft } from "../../aircraft";
+import { GunProjectile } from "../../gunProjectile";
+import { Missile } from "../../missile";
 
 export type AircraftEnemyType =
     | "fighter"

@@ -3,7 +3,10 @@ export type LevelEnemyDefinition = {
     name: string;
     type:
         | "fighter"
-        | "bomber";
+        | "bomber"
+        | "supply"
+        | "destroyer"
+        | "cruiser";
     position: [
         number,
         number,
@@ -12,6 +15,7 @@ export type LevelEnemyDefinition = {
     countermeasures: number;
     ai:
         | "fighter"
+        | "ship"
         | "none";
 };
 

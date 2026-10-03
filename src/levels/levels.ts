@@ -66,4 +66,54 @@ export const LEVELS: LevelDefinition[] = [
             },
         ],
     },
+
+    {
+        id: "convoy",
+        name: "CONVOY",
+        description:
+            "Destroy the convoy and its air escort.",
+        enemies: [
+            {
+                id: "convoy-fighter-1",
+                name: "FIGHTER 1",
+                type: "fighter",
+                position: [-600, 900, -3500],
+                countermeasures: 2,
+                ai: "fighter",
+            },
+            {
+                id: "convoy-fighter-2",
+                name: "FIGHTER 2",
+                type: "fighter",
+                position: [600, 850, -3700],
+                countermeasures: 2,
+                ai: "fighter",
+            },
+
+            {
+                id: "convoy-destroyer",
+                name: "DESTROYER",
+                type: "destroyer",
+                position: [-250, 0, -5000],
+                countermeasures: 0,
+                ai: "ship",
+            },
+            {
+                id: "convoy-supply",
+                name: "SUPPLY SHIP",
+                type: "supply",
+                position: [0, 0, -5300],
+                countermeasures: 0,
+                ai: "none",
+            },
+            {
+                id: "convoy-cruiser",
+                name: "CRUISER",
+                type: "cruiser",
+                position: [300, 0, -5600],
+                countermeasures: 0,
+                ai: "ship",
+            },
+        ],
+    },
 ];
