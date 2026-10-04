@@ -556,6 +556,9 @@ export default function Game({
                                     {
                                         countermeasures:
                                         definition.countermeasures,
+
+                                        team:
+                                        definition.team,
                                     }
                                 );
                             break;
@@ -567,7 +570,10 @@ export default function Game({
                                 new ShipEnemy(
                                     definition.type,
                                     position,
-                                    {}
+                                    {
+                                        team:
+                                        definition.team,
+                                    }
                                 );
                             break;
 
@@ -579,7 +585,10 @@ export default function Game({
                                 new GroundEnemy(
                                     definition.type,
                                     position,
-                                    {}
+                                    {
+                                        team:
+                                        definition.team,
+                                    }
                                 );
                             break;
 
@@ -1002,7 +1011,7 @@ export default function Game({
             "translate(-50%, -50%)";
 
         missileWarning.style.color =
-            "white";
+            "red";
 
         missileWarning.style.fontFamily =
             "monospace";
@@ -1032,53 +1041,74 @@ export default function Game({
             missileWarning
         );
 
-        const missileDirection =
-            document.createElement(
-                "div"
+        const missileDirections:
+            HTMLDivElement[] =
+            [];
+
+        function createMissileDirection() {
+            const missileDirection =
+                document.createElement(
+                    "div"
+                );
+
+            missileDirection.style.position =
+                "fixed";
+
+            missileDirection.style.left =
+                "50%";
+
+            missileDirection.style.top =
+                "50%";
+
+            missileDirection.style.width =
+                "0";
+
+            missileDirection.style.height =
+                "0";
+
+            missileDirection.style.borderLeft =
+                "12px solid transparent";
+
+            missileDirection.style.borderRight =
+                "12px solid transparent";
+
+            missileDirection.style.borderBottom =
+                "24px solid red";
+
+            missileDirection.style.transformOrigin =
+                "50% 50%";
+
+            missileDirection.style.pointerEvents =
+                "none";
+
+            missileDirection.style.zIndex =
+                "20";
+
+            missileDirection.style.filter =
+                "drop-shadow(0 0 3px black)";
+
+            missileDirection.style.display =
+                "none";
+
+            document.body.appendChild(
+                missileDirection
             );
 
-        missileDirection.style.position =
-            "fixed";
+            return missileDirection;
+        }
 
-        missileDirection.style.left =
-            "50%";
-
-        missileDirection.style.top =
-            "50%";
-
-        missileDirection.style.width =
-            "0";
-
-        missileDirection.style.height =
-            "0";
-
-        missileDirection.style.borderLeft =
-            "12px solid transparent";
-
-        missileDirection.style.borderRight =
-            "12px solid transparent";
-
-        missileDirection.style.borderBottom =
-            "24px solid white";
-
-        missileDirection.style.transformOrigin =
-            "50% 50%";
-
-        missileDirection.style.pointerEvents =
-            "none";
-
-        missileDirection.style.zIndex =
-            "20";
-
-        missileDirection.style.filter =
-            "drop-shadow(0 0 3px black)";
-
-        missileDirection.style.display =
-            "none";
-
-        document.body.appendChild(
-            missileDirection
-        );
+        function ensureMissileDirections(
+            count: number
+        ) {
+            while (
+                missileDirections.length <
+                count
+                ) {
+                missileDirections.push(
+                    createMissileDirection()
+                );
+            }
+        }
 
         // --------------------------------------------------
         // Target HUDs
@@ -1106,7 +1136,10 @@ export default function Game({
                 "10";
 
             hud.style.color =
-                "red";
+                runtimeEnemy.enemy.team ===
+                "friendly"
+                    ? "blue"
+                    : "red";
 
             hud.style.fontFamily =
                 "monospace";
@@ -1160,8 +1193,7 @@ export default function Game({
         targetBox.style.height =
             "70px";
 
-        targetBox.style.border =
-            "2px solid red";
+        targetBox.style.border = "2px solid red";
 
         targetBox.style.transform =
             "translate(-50%, -50%)";
@@ -1463,6 +1495,12 @@ export default function Game({
                     marker.style.zIndex =
                         "2";
 
+                    marker.style.background =
+                        enemy.team ===
+                        "friendly"
+                            ? "blue"
+                            : "red";
+
                     radar.appendChild(
                         marker
                     );
@@ -1512,17 +1550,11 @@ export default function Game({
                 marker.style.background =
                     "red";
 
-                marker.style.border =
-                    "1px solid white";
-
                 marker.style.clipPath =
                     "polygon(50% 0%, 100% 100%, 0% 100%)";
             } else {
                 marker.style.background =
                     "white";
-
-                marker.style.border =
-                    "1px solid black";
 
                 marker.style.borderRadius =
                     "50%";
@@ -1617,64 +1649,6 @@ export default function Game({
         );
 
         // --------------------------------------------------
-        // Level aircraft
-        // --------------------------------------------------
-
-        function levelAircraft(
-            enemy: AircraftEnemy,
-            dt: number
-        ) {
-            const euler =
-                new THREE.Euler(
-                    0,
-                    0,
-                    0,
-                    "YXZ"
-                );
-
-            euler.setFromQuaternion(
-                enemy.quaternion,
-                "YXZ"
-            );
-
-            const levelRate =
-                3;
-
-            const alpha =
-                1 -
-                Math.exp(
-                    -levelRate *
-                    dt
-                );
-
-            euler.x =
-                THREE.MathUtils.lerp(
-                    euler.x,
-                    0,
-                    alpha
-                );
-
-            euler.z =
-                THREE.MathUtils.lerp(
-                    euler.z,
-                    0,
-                    alpha
-                );
-
-            enemy.quaternion.setFromEuler(
-                euler
-            );
-
-            enemy.aircraft.quaternion.copy(
-                enemy.quaternion
-            );
-
-            enemy.group.quaternion.copy(
-                enemy.quaternion
-            );
-        }
-
-        // --------------------------------------------------
         // Destroy player
         // --------------------------------------------------
 
@@ -1711,8 +1685,13 @@ export default function Game({
             missileWarning.style.display =
                 "none";
 
-            missileDirection.style.display =
-                "none";
+            for (
+                const missileDirection of
+                missileDirections
+                ) {
+                missileDirection.style.display =
+                    "none";
+            }
 
             for (
                 const hud of
@@ -2090,9 +2069,6 @@ export default function Game({
                     marker.style.borderRadius =
                         "50%";
 
-                    marker.style.background =
-                        "transparent";
-
                     marker.style.clipPath =
                         "none";
                 } else {
@@ -2102,22 +2078,39 @@ export default function Game({
                     marker.style.height =
                         "8px";
 
-                    marker.style.border =
-                        "none";
-
                     marker.style.borderRadius =
                         "50%";
 
                     marker.style.background =
-                        "red";
+                        enemy.team ===
+                        "friendly"
+                            ? "blue"
+                            : "red";
+
+                    marker.style.border = "none";
 
                     marker.style.clipPath =
                         "none";
                 }
             }
 
+            // --------------------------------------------------
+// Incoming missiles
+// --------------------------------------------------
+
+            const incomingMissiles =
+                [
+                    ...enemyMissiles,
+                    ...missiles,
+                ].filter(
+                    missile =>
+                        missile.alive &&
+                        missile.target ===
+                        player.position
+                );
+
             ensureRadarMissileMarkers(
-                enemyMissiles,
+                incomingMissiles,
                 radarEnemyMissileMarkers,
                 true
             );
@@ -2132,46 +2125,9 @@ export default function Game({
                     radarEnemyMissileMarkers[i];
 
                 const missile =
-                    enemyMissiles[i];
+                    incomingMissiles[i];
 
-                if (
-                    !missile ||
-                    !missile.alive
-                ) {
-                    marker.style.display =
-                        "none";
-
-                    continue;
-                }
-
-                updateRadarPosition(
-                    missile.position,
-                    marker
-                );
-            }
-
-            ensureRadarMissileMarkers(
-                missiles,
-                radarPlayerMissileMarkers,
-                false
-            );
-
-            for (
-                let i = 0;
-                i <
-                radarPlayerMissileMarkers.length;
-                i++
-            ) {
-                const marker =
-                    radarPlayerMissileMarkers[i];
-
-                const missile =
-                    missiles[i];
-
-                if (
-                    !missile ||
-                    !missile.alive
-                ) {
+                if (!missile) {
                     marker.style.display =
                         "none";
 
@@ -2746,6 +2702,14 @@ export default function Game({
             // Enemies
             // ------------------------------------------------
 
+            const aircraftEnemies =
+                enemies.filter(
+                    (
+                        enemy
+                    ): enemy is AircraftEnemy =>
+                        enemy instanceof AircraftEnemy
+                );
+
             for (
                 const runtimeEnemy of
                 runtimeEnemies
@@ -2758,8 +2722,8 @@ export default function Game({
                 }
 
                 // --------------------------------------------
-                // Aircraft
-                // --------------------------------------------
+// Aircraft
+// --------------------------------------------
 
                 if (
                     enemy instanceof
@@ -2774,6 +2738,7 @@ export default function Game({
                         const result =
                             ai.update(
                                 enemy,
+                                aircraftEnemies,
                                 missiles,
                                 dt
                             );
@@ -2782,15 +2747,6 @@ export default function Game({
                             dt,
                             result.controls
                         );
-
-                        if (
-                            !player.alive
-                        ) {
-                            levelAircraft(
-                                enemy,
-                                dt
-                            );
-                        }
 
                         if (
                             enemy.alive &&
@@ -2804,54 +2760,23 @@ export default function Game({
                         }
 
                         if (
-                            player.alive &&
                             enemy.alive
                         ) {
+                            // --------------------------------------------
+                            // Countermeasures
+                            // --------------------------------------------
+
                             if (
                                 result.useCountermeasure
                             ) {
-                                let closestMissile:
-                                    Missile | null =
-                                    null;
-
-                                let closestDistance =
-                                    Infinity;
-
-                                for (
-                                    const missile of
+                                enemy.useCountermeasure(
                                     missiles
-                                    ) {
-                                    if (
-                                        !missile.alive
-                                    ) {
-                                        continue;
-                                    }
-
-                                    const distance =
-                                        missile.position.distanceTo(
-                                            enemy.position
-                                        );
-
-                                    if (
-                                        distance <
-                                        closestDistance
-                                    ) {
-                                        closestDistance =
-                                            distance;
-
-                                        closestMissile =
-                                            missile;
-                                    }
-                                }
-
-                                if (
-                                    closestMissile
-                                ) {
-                                    enemy.useCountermeasure(
-                                        closestMissile
-                                    );
-                                }
+                                );
                             }
+
+                            // --------------------------------------------
+                            // Gun
+                            // --------------------------------------------
 
                             if (
                                 result.gunTarget
@@ -2885,6 +2810,10 @@ export default function Game({
                                     );
                                 }
                             }
+
+                            // --------------------------------------------
+                            // Missile
+                            // --------------------------------------------
 
                             if (
                                 result.missileTarget
@@ -2922,15 +2851,6 @@ export default function Game({
                             throttle: 0,
                         }
                     );
-
-                    if (
-                        !player.alive
-                    ) {
-                        levelAircraft(
-                            enemy,
-                            dt
-                        );
-                    }
 
                     if (
                         enemy.alive &&
@@ -2971,7 +2891,6 @@ export default function Game({
                         );
 
                         if (
-                            player.alive &&
                             enemy.alive &&
                             result.missileTarget
                         ) {
@@ -3042,7 +2961,6 @@ export default function Game({
                         );
 
                         if (
-                            player.alive &&
                             enemy.alive &&
                             result.missileTarget
                         ) {
@@ -3829,60 +3747,74 @@ export default function Game({
             }
 
             // ------------------------------------------------
-            // Missile warning
-            // ------------------------------------------------
+// Missile warning
+// ------------------------------------------------
+
+            const incomingMissiles =
+                enemyMissiles.filter(
+                    missile =>
+                        missile.alive &&
+                        missile.target ===
+                        player.position
+                );
+
+            ensureMissileDirections(
+                incomingMissiles.length
+            );
 
             if (
                 player.alive &&
-                enemyMissiles.length >
+                incomingMissiles.length >
                 0
             ) {
                 missileWarning.style.display =
                     "block";
 
-                let closestMissile:
-                    Missile | null =
-                    null;
-
-                let closestDistance =
-                    Infinity;
-
-                for (
-                    const missile of
-                    enemyMissiles
-                    ) {
-                    const distance =
-                        missile.position.distanceTo(
-                            player.position
-                        );
-
-                    if (
-                        distance <
-                        closestDistance
-                    ) {
-                        closestDistance =
-                            distance;
-
-                        closestMissile =
-                            missile;
-                    }
-                }
+                missileWarning.style.color =
+                    "red";
 
                 missileWarning.textContent =
-                    enemyMissiles.length ===
+                    incomingMissiles.length ===
                     1
-                        ? `MISSILE\n${closestDistance.toFixed(
-                            0
-                        )}m`
-                        : `MISSILES × ${enemyMissiles.length}\n${closestDistance.toFixed(
-                            0
-                        )}m`;
+                        ? `MISSILE`
+                        : `MISSILES × ${incomingMissiles.length}`;
 
-                if (
-                    closestMissile
+                const centerX =
+                    window.innerWidth /
+                    2;
+
+                const centerY =
+                    window.innerHeight /
+                    2;
+
+                const radius =
+                    Math.min(
+                        centerX,
+                        centerY
+                    ) *
+                    0.7;
+
+                for (
+                    let i = 0;
+                    i <
+                    missileDirections.length;
+                    i++
                 ) {
+                    const arrow =
+                        missileDirections[i];
+
+                    const missile =
+                        incomingMissiles[i];
+
+                    if (!missile) {
+                        arrow.style.display =
+                            "none";
+
+                        continue;
+                    }
+
                     const toMissile =
-                        closestMissile.position
+                        missile.position
                             .clone()
                             .sub(
                                 player.position
@@ -3904,53 +3836,39 @@ export default function Game({
                             -localMissile.z
                         );
 
-                    const centerX =
-                        window.innerWidth /
-                        2;
-
-                    const centerY =
-                        window.innerHeight /
-                        2;
-
-                    const radius =
-                        Math.min(
-                            centerX,
-                            centerY
-                        ) *
-                        0.7;
-
                     const x =
                         centerX +
-                        Math.sin(
-                            angle
-                        ) *
+                        Math.sin(angle) *
                         radius;
 
                     const y =
                         centerY -
-                        Math.cos(
-                            angle
-                        ) *
+                        Math.cos(angle) *
                         radius;
 
-                    missileDirection.style.left =
+                    arrow.style.left =
                         `${x}px`;
 
-                    missileDirection.style.top =
+                    arrow.style.top =
                         `${y}px`;
 
-                    missileDirection.style.transform =
+                    arrow.style.transform =
                         `translate(-50%, -50%) rotate(${angle}rad)`;
 
-                    missileDirection.style.display =
+                    arrow.style.display =
                         "block";
                 }
             } else {
                 missileWarning.style.display =
                     "none";
 
-                missileDirection.style.display =
-                    "none";
+                for (
+                    const arrow of
+                    missileDirections
+                    ) {
+                    arrow.style.display =
+                        "none";
+                }
             }
 
             // ------------------------------------------------
@@ -4381,7 +4299,12 @@ export default function Game({
             reticle.remove();
             leadIndicator.remove();
             missileWarning.remove();
-            missileDirection.remove();
+            for (
+                const missileDirection of
+                missileDirections
+                ) {
+                missileDirection.remove();
+            }
             targetBox.remove();
             radar.remove();
 

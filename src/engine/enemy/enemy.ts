@@ -1,5 +1,9 @@
 import * as THREE from "three";
 
+export type EnemyTeam =
+    | "friendly"
+    | "enemy";
+
 export type EnemyControls = {
     pitch: number;
     roll: number;
@@ -11,6 +15,9 @@ export type EnemyOptions = {
     health?: number;
     speed?: number;
     collisionRadius?: number;
+    team?: EnemyTeam;
+
+    group?: THREE.Group;
 };
 
 export abstract class Enemy {
@@ -26,6 +33,8 @@ export abstract class Enemy {
 
     speed: number;
 
+    readonly team: EnemyTeam;
+
     alive = true;
 
     constructor(
@@ -33,7 +42,9 @@ export abstract class Enemy {
         collisionRadius: number,
         options: EnemyOptions = {}
     ) {
-        this.position.copy(position);
+        this.position.copy(
+            position
+        );
 
         this.health =
             options.health ?? 100;
@@ -46,6 +57,13 @@ export abstract class Enemy {
 
         this.speed =
             options.speed ?? 0;
+
+        this.team =
+            options.team ?? "enemy";
+
+        this.group =
+            options.group ??
+            new THREE.Group();
 
         this.group.position.copy(
             this.position
@@ -70,8 +88,11 @@ export abstract class Enemy {
 
         this.health -= amount;
 
-        if (this.health <= 0) {
+        if (
+            this.health <= 0
+        ) {
             this.health = 0;
+
             this.destroy();
         }
     }

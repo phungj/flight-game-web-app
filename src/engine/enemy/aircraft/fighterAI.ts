@@ -20,6 +20,7 @@ import {
     CombatAI,
     type CombatAIOptions,
     type CombatAIOutput,
+    type CombatTarget,
 } from "../combatAI";
 
 export type FighterAIOutput =
@@ -28,30 +29,42 @@ export type FighterAIOutput =
 };
 
 export class FighterAI {
+    private player: Player;
+
     private combatAI: CombatAI;
 
     private yawCommand = 0;
     private pitchCommand = 0;
 
     constructor(
-        target: Player,
+        player: Player,
         combatOptions?: CombatAIOptions
     ) {
+        this.player =
+            player;
+
         this.combatAI =
             new CombatAI(
-                target,
                 combatOptions
             );
     }
 
     update(
         enemy: AircraftEnemy,
+        aircraftEnemies: AircraftEnemy[],
         incomingMissiles: Missile[],
         dt: number = 1 / 60
     ): FighterAIOutput {
+        const target =
+            this.findTarget(
+                enemy,
+                aircraftEnemies
+            );
+
         const combat =
             this.combatAI.update(
                 enemy,
+                target,
                 incomingMissiles,
                 dt
             );
@@ -192,5 +205,84 @@ export class FighterAI {
                         : 0.1,
             },
         };
+    }
+
+    private findTarget(
+        enemy: AircraftEnemy,
+        aircraftEnemies: AircraftEnemy[]
+    ): CombatTarget | null {
+        let closestTarget:
+            CombatTarget | null = null;
+
+        let closestDistance =
+            Infinity;
+
+        /*
+         * --------------------------------------------------
+         * PLAYER
+         * --------------------------------------------------
+         *
+         * Enemy aircraft can engage the player.
+         *
+         * Friendly aircraft must never engage the player.
+         */
+
+        if (
+            enemy.team === "enemy" &&
+            this.player.alive
+        ) {
+            closestTarget =
+                this.player;
+
+            closestDistance =
+                enemy.position.distanceTo(
+                    this.player.position
+                );
+        }
+
+        /*
+         * --------------------------------------------------
+         * OTHER AIRCRAFT
+         * --------------------------------------------------
+         *
+         * Only consider aircraft on the opposing team.
+         */
+
+        for (
+            const candidate of
+            aircraftEnemies
+            ) {
+            if (
+                candidate === enemy ||
+                !candidate.alive
+            ) {
+                continue;
+            }
+
+            if (
+                candidate.team ===
+                enemy.team
+            ) {
+                continue;
+            }
+
+            const distance =
+                enemy.position.distanceTo(
+                    candidate.position
+                );
+
+            if (
+                distance <
+                closestDistance
+            ) {
+                closestTarget =
+                    candidate;
+
+                closestDistance =
+                    distance;
+            }
+        }
+
+        return closestTarget;
     }
 }

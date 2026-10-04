@@ -40,7 +40,6 @@ export class ShipAI {
 
         this.combatAI =
             new CombatAI(
-                target,
                 {
                     missileRange: 1500,
                     missileAngle: 180,
@@ -57,6 +56,7 @@ export class ShipAI {
         const combat =
             this.combatAI.update(
                 enemy,
+                this.target,
                 incomingMissiles,
                 dt
             );

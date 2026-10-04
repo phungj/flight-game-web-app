@@ -1,8 +1,16 @@
 import * as THREE from "three";
 
-import { Aircraft } from "@/src/engine/aircraft";
-import { Enemy } from "@/src/engine/enemy/enemy";
-import { Player } from "@/src/engine/player";
+import {
+    Aircraft,
+} from "@/src/engine/aircraft";
+
+import {
+    Enemy,
+} from "@/src/engine/enemy/enemy";
+
+import {
+    Player,
+} from "@/src/engine/player";
 
 export type Target = {
     enemy: Enemy;
@@ -18,7 +26,27 @@ type TargetCandidate = {
 };
 
 const MAX_TARGET_ANGLE =
-    THREE.MathUtils.degToRad(120);
+    THREE.MathUtils.degToRad(
+        120
+    );
+
+/**
+ * --------------------------------------------------
+ * TARGET VALIDITY
+ * --------------------------------------------------
+ *
+ * Player targeting can only select living enemy
+ * targets. Friendly units are never valid targets.
+ */
+function isValidTarget(
+    target: Target
+): boolean {
+    return (
+        target.enemy.alive &&
+        target.enemy.team ===
+        "enemy"
+    );
+}
 
 /**
  * Returns the full 3D angular distance between
@@ -35,7 +63,9 @@ function getTargetAngle(
     const toTarget =
         targetPosition
             .clone()
-            .sub(aircraft.position);
+            .sub(
+                aircraft.position
+            );
 
     if (
         toTarget.lengthSq() <
@@ -59,7 +89,9 @@ function getTargetAngle(
 
     return Math.acos(
         THREE.MathUtils.clamp(
-            forward.dot(toTarget),
+            forward.dot(
+                toTarget
+            ),
             -1,
             1
         )
@@ -87,7 +119,9 @@ function getScreenPosition(
     const projected =
         targetPosition
             .clone()
-            .project(camera);
+            .project(
+                camera
+            );
 
     return new THREE.Vector2(
         projected.x,
@@ -107,38 +141,45 @@ function getCandidates(
     return targets
         .filter(
             target =>
-                target.enemy.alive &&
-                target !== currentTarget
+                isValidTarget(
+                    target
+                ) &&
+                target !==
+                currentTarget
         )
-        .map(target => {
-            const position =
-                target.enemy.position;
+        .map(
+            target => {
+                const position =
+                    target.enemy.position;
 
-            const distance =
-                playerAircraft.position.distanceTo(
-                    position
-                );
+                const distance =
+                    playerAircraft.position.distanceTo(
+                        position
+                    );
 
-            const angle =
-                getTargetAngle(
-                    playerAircraft,
-                    position
-                );
+                const angle =
+                    getTargetAngle(
+                        playerAircraft,
+                        position
+                    );
 
-            const screen =
-                getScreenPosition(
-                    camera,
-                    position
-                );
+                const screen =
+                    getScreenPosition(
+                        camera,
+                        position
+                    );
 
-            return {
-                target,
-                angle,
-                distance,
-                screenX: screen.x,
-                screenY: screen.y,
-            };
-        });
+                return {
+                    target,
+                    angle,
+                    distance,
+                    screenX:
+                    screen.x,
+                    screenY:
+                    screen.y,
+                };
+            }
+        );
 }
 
 /**
@@ -156,22 +197,28 @@ export function selectBestTarget(
         targets
             .filter(
                 target =>
-                    target.enemy.alive
+                    isValidTarget(
+                        target
+                    )
             )
-            .map(target => ({
-                target,
-                angle: getTargetAngle(
-                    player.aircraft,
-                    target.enemy.position
-                ),
-                distance:
-                    player.aircraft.position.distanceTo(
-                        target.enemy.position
-                    ),
-            }));
+            .map(
+                target => ({
+                    target,
+                    angle:
+                        getTargetAngle(
+                            player.aircraft,
+                            target.enemy.position
+                        ),
+                    distance:
+                        player.aircraft.position.distanceTo(
+                            target.enemy.position
+                        ),
+                })
+            );
 
     if (
-        candidates.length === 0
+        candidates.length ===
+        0
     ) {
         return undefined;
     }
@@ -184,20 +231,24 @@ export function selectBestTarget(
         );
 
     const pool =
-        visibleCandidates.length > 0
+        visibleCandidates.length >
+        0
             ? visibleCandidates
             : candidates;
 
     pool.sort(
         (a, b) => {
             const angleDifference =
-                a.angle - b.angle;
+                a.angle -
+                b.angle;
 
             if (
                 Math.abs(
                     angleDifference
                 ) >
-                THREE.MathUtils.degToRad(1)
+                THREE.MathUtils.degToRad(
+                    1
+                )
             ) {
                 return angleDifference;
             }
@@ -231,9 +282,19 @@ export function selectNextTarget(
         );
 
     if (
-        candidates.length === 0
+        candidates.length ===
+        0
     ) {
-        return currentTarget;
+        if (
+            currentTarget &&
+            isValidTarget(
+                currentTarget
+            )
+        ) {
+            return currentTarget;
+        }
+
+        return undefined;
     }
 
     const visibleCandidates =
@@ -244,20 +305,26 @@ export function selectNextTarget(
         );
 
     const pool =
-        visibleCandidates.length > 0
+        visibleCandidates.length >
+        0
             ? visibleCandidates
             : candidates;
 
-    let currentScreenX = -1;
+    let currentScreenX =
+        -1;
 
     if (
         currentTarget &&
-        currentTarget.enemy.alive
+        isValidTarget(
+            currentTarget
+        )
     ) {
         currentScreenX =
             getScreenPosition(
                 camera,
-                currentTarget.enemy.position
+                currentTarget
+                    .enemy
+                    .position
             ).x;
     }
 
@@ -308,9 +375,19 @@ export function selectPreviousTarget(
         );
 
     if (
-        candidates.length === 0
+        candidates.length ===
+        0
     ) {
-        return currentTarget;
+        if (
+            currentTarget &&
+            isValidTarget(
+                currentTarget
+            )
+        ) {
+            return currentTarget;
+        }
+
+        return undefined;
     }
 
     const visibleCandidates =
@@ -321,20 +398,26 @@ export function selectPreviousTarget(
         );
 
     const pool =
-        visibleCandidates.length > 0
+        visibleCandidates.length >
+        0
             ? visibleCandidates
             : candidates;
 
-    let currentScreenX = 1;
+    let currentScreenX =
+        1;
 
     if (
         currentTarget &&
-        currentTarget.enemy.alive
+        isValidTarget(
+            currentTarget
+        )
     ) {
         currentScreenX =
             getScreenPosition(
                 camera,
-                currentTarget.enemy.position
+                currentTarget
+                    .enemy
+                    .position
             ).x;
     }
 

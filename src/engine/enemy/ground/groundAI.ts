@@ -26,14 +26,18 @@ export type GroundAIOutput =
 };
 
 export class GroundAI {
+    private target: Player;
+
     private combatAI: CombatAI;
 
     constructor(
         target: Player
     ) {
+        this.target =
+            target;
+
         this.combatAI =
             new CombatAI(
-                target,
                 {
                     /*
                      * --------------------------------------------------
@@ -69,6 +73,7 @@ export class GroundAI {
         const combat =
             this.combatAI.update(
                 enemy,
+                this.target,
                 incomingMissiles,
                 dt
             );
@@ -92,17 +97,22 @@ export class GroundAI {
                  * Dummy ground targets have no weapons.
                  */
                 missileTarget = null;
+
                 break;
 
             case "aa":
                 /*
                  * The CombatAI gun solution becomes the
                  * ground AA target.
+                 *
+                 * GroundAI always gives CombatAI a Player
+                 * target, so this is safe to narrow.
                  */
                 aaTarget =
-                    combat.gunTarget;
+                    combat.gunTarget as Player | null;
 
                 missileTarget = null;
+
                 break;
 
             case "sam":
@@ -110,6 +120,7 @@ export class GroundAI {
                  * SAMs use the missile solution.
                  */
                 aaTarget = null;
+
                 break;
         }
 

@@ -171,11 +171,19 @@ export const LEVELS: LevelDefinition[] = [
                 id: "depot-fuel-1",
                 type: "fuel-tank",
                 position: [-250, 0, -2500],
+                enemy: {
+                    health: 75,
+                    team: "enemy",
+                },
             },
             {
                 id: "depot-fuel-2",
                 type: "fuel-tank",
                 position: [250, 0, -2500],
+                enemy: {
+                    health: 75,
+                    team: "enemy",
+                },
             },
         ],
 
@@ -243,6 +251,178 @@ export const LEVELS: LevelDefinition[] = [
                 position: [300, 0, -2900],
                 countermeasures: 0,
                 ai: "ground",
+            },
+        ],
+    },
+    {
+        id: "furball",
+        name: "FURBALL",
+        description:
+            "Join friendlies in a furball and eliminate the enemy fighters.",
+        terrain: {
+            type: "ocean"
+        },
+        objects: [],
+
+        enemies: [
+            /*
+             * --------------------------------------------------
+             * FRIENDLY FLIGHT
+             * --------------------------------------------------
+             */
+
+            {
+                id: "friendly-1",
+                name: "FRIENDLY 1",
+                type: "fighter",
+                position: [-900, 700, -2600],
+                countermeasures: 2,
+                ai: "fighter",
+                team: "friendly",
+            },
+            {
+                id: "friendly-2",
+                name: "FRIENDLY 2",
+                type: "fighter",
+                position: [-350, 900, -3100],
+                countermeasures: 2,
+                ai: "fighter",
+                team: "friendly",
+            },
+            {
+                id: "friendly-3",
+                name: "FRIENDLY 3",
+                type: "fighter",
+                position: [250, 650, -2900],
+                countermeasures: 2,
+                ai: "fighter",
+                team: "friendly",
+            },
+            {
+                id: "friendly-4",
+                name: "FRIENDLY 4",
+                type: "fighter",
+                position: [850, 850, -3400],
+                countermeasures: 2,
+                ai: "fighter",
+                team: "friendly",
+            },
+
+            {
+                id: "friendly-5",
+                name: "FRIENDLY 5",
+                type: "fighter",
+                position: [-750, 1100, -3900],
+                countermeasures: 3,
+                ai: "fighter",
+                team: "friendly",
+            },
+            {
+                id: "friendly-6",
+                name: "FRIENDLY 6",
+                type: "fighter",
+                position: [-100, 550, -4200],
+                countermeasures: 3,
+                ai: "fighter",
+                team: "friendly",
+            },
+            {
+                id: "friendly-7",
+                name: "FRIENDLY 7",
+                type: "fighter",
+                position: [500, 1000, -4000],
+                countermeasures: 3,
+                ai: "fighter",
+                team: "friendly",
+            },
+            {
+                id: "friendly-8",
+                name: "FRIENDLY 8",
+                type: "fighter",
+                position: [1100, 750, -4500],
+                countermeasures: 3,
+                ai: "fighter",
+                team: "friendly",
+            },
+
+            /*
+             * --------------------------------------------------
+             * ENEMY FLIGHT
+             * --------------------------------------------------
+             */
+
+            {
+                id: "enemy-1",
+                name: "ENEMY 1",
+                type: "fighter",
+                position: [1000, 800, -2700],
+                countermeasures: 2,
+                ai: "fighter",
+                team: "enemy",
+            },
+            {
+                id: "enemy-2",
+                name: "ENEMY 2",
+                type: "fighter",
+                position: [400, 600, -3200],
+                countermeasures: 2,
+                ai: "fighter",
+                team: "enemy",
+            },
+            {
+                id: "enemy-3",
+                name: "ENEMY 3",
+                type: "fighter",
+                position: [-250, 950, -2850],
+                countermeasures: 2,
+                ai: "fighter",
+                team: "enemy",
+            },
+            {
+                id: "enemy-4",
+                name: "ENEMY 4",
+                type: "fighter",
+                position: [-900, 700, -3500],
+                countermeasures: 2,
+                ai: "fighter",
+                team: "enemy",
+            },
+
+            {
+                id: "enemy-5",
+                name: "ENEMY 5",
+                type: "fighter",
+                position: [800, 1150, -3900],
+                countermeasures: 3,
+                ai: "fighter",
+                team: "enemy",
+            },
+            {
+                id: "enemy-6",
+                name: "ENEMY 6",
+                type: "fighter",
+                position: [150, 500, -4300],
+                countermeasures: 3,
+                ai: "fighter",
+                team: "enemy",
+            },
+            {
+                id: "enemy-7",
+                name: "ENEMY 7",
+                type: "fighter",
+                position: [-550, 1050, -4100],
+                countermeasures: 3,
+                ai: "fighter",
+                team: "enemy",
+            },
+            {
+                id: "enemy-8",
+                name: "ENEMY 8",
+                type: "fighter",
+                position: [-1100, 750, -4600],
+                countermeasures: 3,
+                ai: "fighter",
+                team: "enemy",
             },
         ],
     },

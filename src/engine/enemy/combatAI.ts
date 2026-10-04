@@ -12,9 +12,17 @@ import {
     Missile,
 } from "../missile";
 
+export type CombatTarget =
+    | Player
+    | Enemy;
+
 export type CombatAIOutput = {
-    gunTarget: Player | null;
-    missileTarget: Player | null;
+    gunTarget:
+        CombatTarget | null;
+
+    missileTarget:
+        CombatTarget | null;
+
     useCountermeasure: boolean;
 
     debug: {
@@ -36,8 +44,6 @@ export type CombatAIOptions = {
 };
 
 export class CombatAI {
-    private target: Player;
-
     private gunRange: number;
     private gunAngle: number;
 
@@ -47,11 +53,8 @@ export class CombatAI {
     private countermeasureRange: number;
 
     constructor(
-        target: Player,
         options: CombatAIOptions = {}
     ) {
-        this.target = target;
-
         this.gunRange =
             options.gunRange ?? 800;
 
@@ -74,20 +77,28 @@ export class CombatAI {
 
     update(
         enemy: Enemy,
+        target: CombatTarget | null,
         incomingMissiles: Missile[],
         _dt: number = 1 / 60
     ): CombatAIOutput {
         /*
          * --------------------------------------------------
-         * TARGET DEAD
+         * NO TARGET
          * --------------------------------------------------
          */
 
-        if (!this.target.alive) {
+        if (
+            target === null ||
+            !target.alive
+        ) {
             return {
                 gunTarget: null,
                 missileTarget: null,
-                useCountermeasure: false,
+                useCountermeasure:
+                    this.shouldUseCountermeasure(
+                        enemy,
+                        incomingMissiles
+                    ),
 
                 debug: {
                     interceptPoint:
@@ -106,45 +117,11 @@ export class CombatAI {
          * --------------------------------------------------
          */
 
-        let closestMissile:
-            Missile | null = null;
-
-        let closestMissileDistance =
-            Infinity;
-
-        for (
-            const missile of
-            incomingMissiles
-            ) {
-            if (
-                !missile.alive ||
-                missile.target !==
-                enemy.position
-            ) {
-                continue;
-            }
-
-            const distance =
-                missile.position.distanceTo(
-                    enemy.position
-                );
-
-            if (
-                distance <
-                closestMissileDistance
-            ) {
-                closestMissile =
-                    missile;
-
-                closestMissileDistance =
-                    distance;
-            }
-        }
-
         const useCountermeasure =
-            closestMissile !== null &&
-            closestMissileDistance <
-            this.countermeasureRange;
+            this.shouldUseCountermeasure(
+                enemy,
+                incomingMissiles
+            );
 
         /*
          * --------------------------------------------------
@@ -153,7 +130,7 @@ export class CombatAI {
          */
 
         const toTarget =
-            this.target.position
+            target.position
                 .clone()
                 .sub(
                     enemy.position
@@ -173,7 +150,7 @@ export class CombatAI {
 
                 debug: {
                     interceptPoint:
-                        this.target.position.clone(),
+                        target.position.clone(),
 
                     horizontalAngle: 0,
                     verticalAngle: 0,
@@ -222,17 +199,25 @@ export class CombatAI {
         const canFireGun =
             distance <
             this.gunRange &&
-            Math.abs(horizontalAngle) <
+            Math.abs(
+                horizontalAngle
+            ) <
             this.gunAngle &&
-            Math.abs(verticalAngle) <
+            Math.abs(
+                verticalAngle
+            ) <
             this.gunAngle;
 
         const canFireMissile =
             distance <
             this.missileRange &&
-            Math.abs(horizontalAngle) <
+            Math.abs(
+                horizontalAngle
+            ) <
             this.missileAngle &&
-            Math.abs(verticalAngle) <
+            Math.abs(
+                verticalAngle
+            ) <
             this.missileAngle;
 
         /*
@@ -244,24 +229,63 @@ export class CombatAI {
         return {
             gunTarget:
                 canFireGun
-                    ? this.target
+                    ? target
                     : null,
 
             missileTarget:
                 canFireMissile
-                    ? this.target
+                    ? target
                     : null,
 
             useCountermeasure,
 
             debug: {
                 interceptPoint:
-                    this.target.position.clone(),
+                    target.position.clone(),
 
                 horizontalAngle,
                 verticalAngle,
                 distance,
             },
         };
+    }
+
+    private shouldUseCountermeasure(
+        enemy: Enemy,
+        incomingMissiles: Missile[]
+    ): boolean {
+        let closestMissileDistance =
+            Infinity;
+
+        for (
+            const missile of
+            incomingMissiles
+            ) {
+            if (
+                !missile.alive ||
+                missile.target !==
+                enemy.position
+            ) {
+                continue;
+            }
+
+            const distance =
+                missile.position.distanceTo(
+                    enemy.position
+                );
+
+            if (
+                distance <
+                closestMissileDistance
+            ) {
+                closestMissileDistance =
+                    distance;
+            }
+        }
+
+        return (
+            closestMissileDistance <
+            this.countermeasureRange
+        );
     }
 }

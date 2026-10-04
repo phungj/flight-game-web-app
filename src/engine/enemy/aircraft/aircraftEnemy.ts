@@ -88,6 +88,8 @@ export class AircraftEnemy extends Enemy {
             {
                 health,
                 speed,
+                team:
+                options.team,
             }
         );
 
@@ -158,6 +160,16 @@ export class AircraftEnemy extends Enemy {
     }
 
     private createFighter() {
+        const primaryColor =
+            this.team === "friendly"
+                ? "blue"
+                : 0xff4444;
+
+        const secondaryColor =
+            this.team === "friendly"
+                ? 0x006699
+                : 0xcc2222;
+
         const fuselage =
             new THREE.Mesh(
                 new THREE.ConeGeometry(
@@ -166,7 +178,8 @@ export class AircraftEnemy extends Enemy {
                     6
                 ),
                 new THREE.MeshStandardMaterial({
-                    color: 0xff4444,
+                    color:
+                    primaryColor,
                 })
             );
 
@@ -188,7 +201,8 @@ export class AircraftEnemy extends Enemy {
                     1.2
                 ),
                 new THREE.MeshStandardMaterial({
-                    color: 0xcc2222,
+                    color:
+                    secondaryColor,
                 })
             );
 
@@ -201,6 +215,16 @@ export class AircraftEnemy extends Enemy {
     }
 
     private createBomber() {
+        const primaryColor =
+            this.team === "friendly"
+                ? 0x0088cc
+                : 0xff4444;
+
+        const secondaryColor =
+            this.team === "friendly"
+                ? 0x006699
+                : 0xcc2222;
+
         const body =
             new THREE.Mesh(
                 new THREE.BoxGeometry(
@@ -209,7 +233,8 @@ export class AircraftEnemy extends Enemy {
                     10
                 ),
                 new THREE.MeshStandardMaterial({
-                    color: 0xff4444,
+                    color:
+                    primaryColor,
                 })
             );
 
@@ -225,7 +250,8 @@ export class AircraftEnemy extends Enemy {
                     3
                 ),
                 new THREE.MeshStandardMaterial({
-                    color: 0xcc2222,
+                    color:
+                    secondaryColor,
                 })
             );
 
@@ -241,7 +267,8 @@ export class AircraftEnemy extends Enemy {
                     2
                 ),
                 new THREE.MeshStandardMaterial({
-                    color: 0xcc2222,
+                    color:
+                    secondaryColor,
                 })
             );
 
@@ -786,6 +813,10 @@ export class AircraftEnemy extends Enemy {
         return missile;
     }
 
+    // --------------------------------------------------
+// Countermeasures
+// --------------------------------------------------
+
     canUseCountermeasure() {
         return (
             this.alive &&
@@ -795,7 +826,7 @@ export class AircraftEnemy extends Enemy {
     }
 
     useCountermeasure(
-        missile: Missile
+        missiles: Missile[]
     ) {
         if (
             !this.canUseCountermeasure()
@@ -803,7 +834,29 @@ export class AircraftEnemy extends Enemy {
             return false;
         }
 
-        missile.loseTarget();
+        let brokeMissile =
+            false;
+
+        for (
+            const missile of
+            missiles
+            ) {
+            if (
+                !missile.alive ||
+                missile.target !==
+                this.position
+            ) {
+                continue;
+            }
+
+            missile.loseTarget();
+
+            brokeMissile = true;
+        }
+
+        if (!brokeMissile) {
+            return false;
+        }
 
         this.countermeasures--;
 
