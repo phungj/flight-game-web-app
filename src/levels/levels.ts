@@ -172,6 +172,7 @@ export const LEVELS: LevelDefinition[] = [
                 type: "fuel-tank",
                 position: [-250, 0, -2500],
                 enemy: {
+                    name: "FUEL TANK",
                     health: 75,
                     team: "enemy",
                 },
@@ -181,6 +182,7 @@ export const LEVELS: LevelDefinition[] = [
                 type: "fuel-tank",
                 position: [250, 0, -2500],
                 enemy: {
+                    name: "FUEL TANK",
                     health: 75,
                     team: "enemy",
                 },

@@ -19,6 +19,8 @@ export type LevelTerrainDefinition = {
 // --------------------------------------------------
 
 export type LevelObjectEnemyDefinition = {
+    name: string;
+
     health: number;
 
     team?: EnemyTeam;

@@ -45,10 +45,16 @@ import {
     selectNextTarget as getNextTarget,
     Target,
 } from "@/src/engine/targeting";
+import {ObjectEnemy} from "@/src/engine/enemy/objectEnemy";
 
 type GameProps = {
     level: LevelDefinition;
     onExit: () => void;
+};
+
+type ObjectRuntimeEnemy = {
+    definition: LevelObjectDefinition;
+    enemy: ObjectEnemy;
 };
 
 type RuntimeEnemy = {
@@ -321,6 +327,9 @@ export default function Game({
                 }),
         };
 
+        const objectEnemies:
+            ObjectRuntimeEnemy[] = [];
+
         function createLevelObject(
             definition: LevelObjectDefinition
         ): THREE.Group {
@@ -511,6 +520,10 @@ export default function Game({
             return group;
         }
 
+        // --------------------------------------------------
+        // Level objects
+        // --------------------------------------------------
+
         for (
             const definition of
             level.objects
@@ -527,6 +540,32 @@ export default function Game({
             levelObjects.push(
                 object
             );
+
+            if (
+                definition.enemy
+            ) {
+                const enemy =
+                    new ObjectEnemy(
+                        new THREE.Vector3(
+                            ...definition.position
+                        ),
+                        {
+                            health:
+                            definition.enemy.health,
+
+                            team:
+                            definition.enemy.team,
+
+                            group:
+                            object,
+                        }
+                    );
+
+                objectEnemies.push({
+                    definition,
+                    enemy,
+                });
+            }
         }
 
         // --------------------------------------------------
@@ -609,11 +648,18 @@ export default function Game({
                 }
             );
 
-        const enemies =
-            runtimeEnemies.map(
+        const enemies:
+            Enemy[] = [
+            ...runtimeEnemies.map(
                 runtimeEnemy =>
                     runtimeEnemy.enemy
-            );
+            ),
+
+            ...objectEnemies.map(
+                objectEnemy =>
+                    objectEnemy.enemy
+            ),
+        ];
 
         // --------------------------------------------------
         // Fighter AI
@@ -703,22 +749,33 @@ export default function Game({
         }
 
         // --------------------------------------------------
-        // Target selection
-        // --------------------------------------------------
+// Targets
+// --------------------------------------------------
 
         const targets:
-            Target[] =
-            runtimeEnemies.map(
+            Target[] = [
+            ...runtimeEnemies.map(
                 runtimeEnemy => ({
                     enemy:
                     runtimeEnemy.enemy,
 
                     name:
-                    runtimeEnemy
-                        .definition
+                    runtimeEnemy.definition.name,
+                })
+            ),
+
+            ...objectEnemies.map(
+                objectEnemy => ({
+                    enemy:
+                    objectEnemy.enemy,
+
+                    name:
+                    objectEnemy.definition
+                        .enemy!
                         .name,
                 })
-            );
+            ),
+        ];
 
         let target =
             selectBestTarget(
@@ -1121,8 +1178,8 @@ export default function Game({
             >();
 
         for (
-            const runtimeEnemy of
-            runtimeEnemies
+            const enemy of
+            enemies
             ) {
             const hud =
                 document.createElement(
@@ -1136,7 +1193,7 @@ export default function Game({
                 "10";
 
             hud.style.color =
-                runtimeEnemy.enemy.team ===
+                enemy.team ===
                 "friendly"
                     ? "blue"
                     : "red";
@@ -1170,7 +1227,7 @@ export default function Game({
             );
 
             targetHuds.set(
-                runtimeEnemy.enemy,
+                enemy,
                 hud
             );
         }
@@ -3996,15 +4053,15 @@ export default function Game({
             );
 
             // ------------------------------------------------
-            // Target HUDs
-            // ------------------------------------------------
+// Target HUDs
+// ------------------------------------------------
 
             for (
-                const runtimeEnemy of
-                runtimeEnemies
+                const targetEntry of
+                targets
                 ) {
                 const enemy =
-                    runtimeEnemy.enemy;
+                    targetEntry.enemy;
 
                 const hud =
                     targetHuds.get(
@@ -4022,9 +4079,7 @@ export default function Game({
                     updateTargetHud(
                         hud,
                         enemy,
-                        runtimeEnemy
-                            .definition
-                            .name,
+                        targetEntry.name,
                         target?.enemy ===
                         enemy,
                         locked &&
