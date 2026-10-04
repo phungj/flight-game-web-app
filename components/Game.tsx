@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import {useEffect, useRef, useState} from "react";
 import * as THREE from "three";
 
 import { Controls } from "@/src/engine/controls";
@@ -73,6 +73,8 @@ export default function Game({
 
     const hudRef =
         useRef<HTMLDivElement>(null);
+
+    const [resetKey, setResetKey] = useState<number>(0);
 
     useEffect(() => {
         const container =
@@ -2640,6 +2642,19 @@ export default function Game({
 
             if (
                 event.code ===
+                "KeyR" &&
+                !event.repeat
+            ) {
+                setResetKey(
+                    key =>
+                        key + 1
+                );
+
+                return;
+            }
+
+            if (
+                event.code ===
                 "Escape" &&
                 !event.repeat
             ) {
@@ -4423,7 +4438,7 @@ export default function Game({
                 );
             }
         };
-    }, [level, onExit]);
+    }, [level, onExit, resetKey]);
 
     return (
         <main
@@ -4501,15 +4516,15 @@ export default function Game({
                 </div>
 
                 <div>
-                    A / D &nbsp;&nbsp; Roll
+                    A / D &nbsp; Roll
                 </div>
 
                 <div>
-                    Q / E &nbsp;&nbsp; Yaw
+                    Q / E &nbsp; Yaw
                 </div>
 
                 <div>
-                    W / S &nbsp;&nbsp; Throttle
+                    W / S &nbsp; Throttle
                 </div>
 
                 <div
@@ -4538,6 +4553,15 @@ export default function Game({
                     }}
                 >
                     ESC &nbsp;&nbsp;&nbsp; Mission Select
+                </div>
+
+                <div
+                    style={{
+                        color:
+                            "rgba(255,255,255,0.6)",
+                    }}
+                >
+                    R &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Restart Mission
                 </div>
             </div>
 
