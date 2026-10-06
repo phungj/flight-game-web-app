@@ -4512,7 +4512,7 @@ export default function Game({
                 </div>
 
                 <div>
-                    ↑ / ↓ &nbsp; Pitch
+                    W / S &nbsp; Pitch
                 </div>
 
                 <div>
@@ -4524,7 +4524,7 @@ export default function Game({
                 </div>
 
                 <div>
-                    W / S &nbsp; Throttle
+                    SHIFT / CTRL &nbsp; Throttle
                 </div>
 
                 <div
@@ -4549,7 +4549,7 @@ export default function Game({
                         marginTop:
                             "6px",
                         color:
-                            "rgba(255,255,255,0.6)",
+                            "rgba(255, 255, 255, 0.6)",
                     }}
                 >
                     ESC &nbsp;&nbsp;&nbsp; Mission Select
@@ -4558,7 +4558,7 @@ export default function Game({
                 <div
                     style={{
                         color:
-                            "rgba(255,255,255,0.6)",
+                            "rgba(255, 255, 255, 0.6)",
                     }}
                 >
                     R &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Restart Mission
