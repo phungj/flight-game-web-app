@@ -94,6 +94,18 @@ export class Controls {
     private keys =
         new Set<string>();
 
+    private pendingPressed =
+        new Set<string>();
+
+    private pendingReleased =
+        new Set<string>();
+
+    private pressed =
+        new Set<string>();
+
+    private released =
+        new Set<string>();
+
     private bindings:
         ControlBindings;
 
@@ -102,6 +114,9 @@ export class Controls {
 
     private rebindingCallback:
         ((code: string) => void) | null = null;
+
+    private rebindingCancelCallback:
+        (() => void) | null = null;
 
     constructor(
         bindings?: ControlBindings
@@ -133,7 +148,12 @@ export class Controls {
             if (
                 event.code === "Escape"
             ) {
+                const cancelCallback =
+                    this.rebindingCancelCallback;
+
                 this.cancelRebinding();
+
+                cancelCallback?.();
 
                 return;
             }
@@ -148,6 +168,9 @@ export class Controls {
                 null;
 
             this.rebindingCallback =
+                null;
+
+            this.rebindingCancelCallback =
                 null;
 
             this.setBinding(
@@ -170,6 +193,16 @@ export class Controls {
             event.preventDefault();
         }
 
+        if (
+            !this.keys.has(
+                event.code
+            )
+        ) {
+            this.pendingPressed.add(
+                event.code
+            );
+        }
+
         this.keys.add(
             event.code
         );
@@ -184,6 +217,16 @@ export class Controls {
             )
         ) {
             event.preventDefault();
+        }
+
+        if (
+            this.keys.has(
+                event.code
+            )
+        ) {
+            this.pendingReleased.add(
+                event.code
+            );
         }
 
         this.keys.delete(
@@ -210,11 +253,69 @@ export class Controls {
         );
     }
 
+    private isActionPressed(
+        action: ControlAction
+    ) {
+        return this.bindings[action].some(
+            code =>
+                this.pressed.has(code)
+        );
+    }
+
+    private isActionReleased(
+        action: ControlAction
+    ) {
+        return this.bindings[action].some(
+            code =>
+                this.released.has(code)
+        );
+    }
+
     isDown(
         code: string
     ) {
         return this.keys.has(
             code
+        );
+    }
+
+    isBound(
+        action: ControlAction,
+        code: string
+    ) {
+        return this.bindings[action].includes(
+            code
+        );
+    }
+
+    update() {
+        this.pressed =
+            new Set(
+                this.pendingPressed
+            );
+
+        this.released =
+            new Set(
+                this.pendingReleased
+            );
+
+        this.pendingPressed.clear();
+        this.pendingReleased.clear();
+    }
+
+    wasPressed(
+        action: ControlAction
+    ) {
+        return this.isActionPressed(
+            action
+        );
+    }
+
+    wasReleased(
+        action: ControlAction
+    ) {
+        return this.isActionReleased(
+            action
         );
     }
 
@@ -335,6 +436,10 @@ export class Controls {
         ];
 
         this.keys.clear();
+        this.pendingPressed.clear();
+        this.pendingReleased.clear();
+        this.pressed.clear();
+        this.released.clear();
     }
 
     resetBindings() {
@@ -342,19 +447,31 @@ export class Controls {
             cloneDefaultBindings();
 
         this.keys.clear();
+        this.pendingPressed.clear();
+        this.pendingReleased.clear();
+        this.pressed.clear();
+        this.released.clear();
     }
 
     startRebinding(
         action: ControlAction,
-        callback?: (code: string) => void
+        callback?: (code: string) => void,
+        cancelCallback?: () => void
     ) {
         this.keys.clear();
+        this.pendingPressed.clear();
+        this.pendingReleased.clear();
+        this.pressed.clear();
+        this.released.clear();
 
         this.rebindingAction =
             action;
 
         this.rebindingCallback =
             callback ?? null;
+
+        this.rebindingCancelCallback =
+            cancelCallback ?? null;
     }
 
     cancelRebinding() {
@@ -364,7 +481,14 @@ export class Controls {
         this.rebindingCallback =
             null;
 
+        this.rebindingCancelCallback =
+            null;
+
         this.keys.clear();
+        this.pendingPressed.clear();
+        this.pendingReleased.clear();
+        this.pressed.clear();
+        this.released.clear();
     }
 
     isRebinding() {
@@ -383,5 +507,13 @@ export class Controls {
         );
 
         this.keys.clear();
+        this.pendingPressed.clear();
+        this.pendingReleased.clear();
+        this.pressed.clear();
+        this.released.clear();
     }
+}
+
+export function getDefaultBindings(): ControlBindings {
+    return cloneDefaultBindings();
 }

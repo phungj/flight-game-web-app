@@ -8,9 +8,6 @@ import {
     ControlBindings,
 } from "@/src/engine/controls";
 
-import type {
-    ControlAction,
-} from "@/src/engine/controls";
 import { Enemy } from "@/src/engine/enemy/enemy";
 
 import {
@@ -60,6 +57,7 @@ import {GameHud} from "@/src/engine/hud/gameHUD";
 type GameProps = {
     level: LevelDefinition;
     onExit: () => void;
+    bindings: ControlBindings;
 };
 
 type ObjectRuntimeEnemy = {
@@ -74,63 +72,17 @@ type RuntimeEnemy = {
     enemy: Enemy;
 };
 
-const GAME_KEYS = {
-    launchMissile: "Space",
-    fireGun: "KeyF",
-    nextTarget: "Tab",
-    reset: "KeyR",
-    exit: "Escape",
-} as const;
-
 export default function Game({
                                  level,
                                  onExit,
+    bindings
                              }: GameProps) {
     const containerRef =
         useRef<HTMLDivElement>(null);
 
-    const controlsRef =
-        useRef<Controls | null>(null);
-
-    const [bindings, setBindings] =
-        useState<ControlBindings | null>(
-            null
-        );
-
-    const [rebindingAction, setRebindingAction] =
-        useState<ControlAction | null>(
-            null
-        );
-
     const [resetKey, setResetKey] = useState<number>(0);
 
-    function startRebinding(
-        action: ControlAction
-    ) {
-        const controls =
-            controlsRef.current;
-
-        if (!controls) {
-            return;
-        }
-
-        setRebindingAction(
-            action
-        );
-
-        controls.startRebinding(
-            action,
-            () => {
-                setBindings(
-                    controls.getBindings()
-                );
-
-                setRebindingAction(
-                    null
-                );
-            }
-        );
-    }
+    const [won, setWon] = useState<boolean>(false);
 
     useEffect(() => {
         const container =
@@ -140,7 +92,7 @@ export default function Game({
             return;
         }
 
-        const hud = new GameHud(containerRef.current);
+        const hud = new GameHud(container);
 
         // --------------------------------------------------
         // Scene
@@ -258,14 +210,7 @@ export default function Game({
         );
 
         const controls =
-            new Controls();
-
-        controlsRef.current =
-            controls;
-
-        setBindings(
-            controls.getBindings()
-        );
+            new Controls(bindings);
 
         // --------------------------------------------------
         // Player aircraft
@@ -807,7 +752,6 @@ export default function Game({
         const playerGunMuzzleSpeed =
             500;
 
-        let gunFiring = false;
         let gunCooldown = 0;
 
         // --------------------------------------------------
@@ -916,7 +860,6 @@ export default function Game({
             playerAircraft.visible =
                 false;
 
-            gunFiring = false;
             locked = false;
 
             hud.hide();
@@ -1414,83 +1357,6 @@ export default function Game({
         }
 
         // --------------------------------------------------
-        // Input
-        // --------------------------------------------------
-
-        function handleKeyDown(
-            event: KeyboardEvent
-        ) {
-            if (
-                event.code ===
-                GAME_KEYS.launchMissile &&
-                !event.repeat
-            ) {
-                launchMissile();
-            }
-
-            if (
-                event.code ===
-                GAME_KEYS.fireGun
-            ) {
-                gunFiring =
-                    true;
-            }
-
-            if (
-                event.code ===
-                GAME_KEYS.nextTarget &&
-                !event.repeat
-            ) {
-                event.preventDefault();
-
-                selectNextTarget();
-            }
-
-            if (
-                event.code ===
-                GAME_KEYS.reset &&
-                !event.repeat
-            ) {
-                setResetKey(
-                    key =>
-                        key + 1
-                );
-
-                return;
-            }
-
-            if (
-                event.code ===
-                GAME_KEYS.exit &&
-                !event.repeat
-            ) {
-                onExit();
-            }
-        }
-
-        function handleKeyUp(
-            event: KeyboardEvent
-        ) {
-            if (
-                event.code ===
-                GAME_KEYS.fireGun
-            ) {
-                gunFiring =
-                    false;
-            }
-        }
-
-        window.addEventListener(
-            "keydown",
-            handleKeyDown
-        );
-
-        window.addEventListener(
-            "keyup",
-            handleKeyUp
-        );
-
-        // --------------------------------------------------
         // Chase camera
         // --------------------------------------------------
 
@@ -1545,6 +1411,40 @@ export default function Game({
 
             previousTime =
                 currentTime;
+
+            controls.update();
+
+            if (
+                controls.wasPressed(
+                    "launchMissile"
+                )
+            ) {
+                launchMissile();
+            }
+
+            if (
+                controls.wasPressed(
+                    "nextTarget"
+                )
+            ) {
+                selectNextTarget();
+            }
+
+            if (controls.wasPressed("reset")) {
+                setWon(false);
+                setResetKey(key => key + 1);
+                return;
+            }
+
+            if (
+                controls.wasPressed(
+                    "exit"
+                )
+            ) {
+                onExit();
+
+                return;
+            }
 
             // ------------------------------------------------
             // Player
@@ -1983,7 +1883,7 @@ export default function Game({
 
             if (
                 player.alive &&
-                gunFiring &&
+                controls.fireGun &&
                 enemies.some(
                     enemy =>
                         enemy.alive
@@ -2656,6 +2556,21 @@ export default function Game({
             }
 
             // ------------------------------------------------
+            // Victory
+            // ------------------------------------------------
+
+            if (
+                !won &&
+                enemies.length > 0 &&
+                enemies.every(
+                    enemy =>
+                        !enemy.alive
+                )
+            ) {
+                setWon(true);
+            }
+
+            // ------------------------------------------------
             // Player rendering
             // ------------------------------------------------
 
@@ -2950,16 +2865,6 @@ export default function Game({
                 handleResize
             );
 
-            window.removeEventListener(
-                "keydown",
-                handleKeyDown
-            );
-
-            window.removeEventListener(
-                "keyup",
-                handleKeyUp
-            );
-
             hud.destroy()
 
             scene.remove(
@@ -3012,9 +2917,6 @@ export default function Game({
 
             controls.dispose();
 
-            controlsRef.current =
-                null;
-
             if (
                 renderer.domElement
                     .parentElement ===
@@ -3025,7 +2927,7 @@ export default function Game({
                 );
             }
         };
-    }, [level, onExit, resetKey]);
+    }, [level, onExit, resetKey, bindings]);
 
     return (
         <main
@@ -3037,12 +2939,11 @@ export default function Game({
                 position: "relative",
             }}
         >
-            {bindings && (
-                <ScenarioPanel
-                    description={level.description}
-                    bindings={bindings}
-                />
-            )}
+            <ScenarioPanel
+                description={level.description}
+                bindings={bindings}
+                won={won}
+            />
         </main>
     );
 }

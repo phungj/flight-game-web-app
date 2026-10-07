@@ -1,13 +1,16 @@
 import {ControlBindings} from "@/src/engine/controls";
+import {formatBindings} from "@/src/engine/controls/formatBinding";
 
 type ScenarioPanelProps = {
     description: string;
     bindings: ControlBindings;
+    won: boolean;
 };
 
 export function ScenarioPanel({
                                   description,
                                   bindings,
+                                  won,
                               }: ScenarioPanelProps) {
     return (
         <div
@@ -53,7 +56,9 @@ export function ScenarioPanel({
                         "10px",
                 }}
             >
-                {description}
+                {won
+                    ? "MISSION COMPLETE"
+                    : description}
             </div>
 
             <div
@@ -70,55 +75,76 @@ export function ScenarioPanel({
             >
                 CONTROLS
             </div>
+
             <div>
-    <span
-        style={{
-            display: "inline-block",
-            width: "120px",
-        }}
-    >
-        {formatBindings(bindings.pitchUp)} /{" "}
-        {formatBindings(bindings.pitchDown)}
-    </span>
+                <span
+                    style={{
+                        display:
+                            "inline-block",
+                        width: "120px",
+                    }}
+                >
+                    {formatBindings(
+                        bindings.pitchUp
+                    )} /{" "}
+                    {formatBindings(
+                        bindings.pitchDown
+                    )}
+                </span>
                 Pitch
             </div>
 
             <div>
-    <span
-        style={{
-            display: "inline-block",
-            width: "120px",
-        }}
-    >
-        {formatBindings(bindings.rollLeft)} /{" "}
-        {formatBindings(bindings.rollRight)}
-    </span>
+                <span
+                    style={{
+                        display:
+                            "inline-block",
+                        width: "120px",
+                    }}
+                >
+                    {formatBindings(
+                        bindings.rollLeft
+                    )} /{" "}
+                    {formatBindings(
+                        bindings.rollRight
+                    )}
+                </span>
                 Roll
             </div>
 
             <div>
-    <span
-        style={{
-            display: "inline-block",
-            width: "120px",
-        }}
-    >
-        {formatBindings(bindings.yawLeft)} /{" "}
-        {formatBindings(bindings.yawRight)}
-    </span>
+                <span
+                    style={{
+                        display:
+                            "inline-block",
+                        width: "120px",
+                    }}
+                >
+                    {formatBindings(
+                        bindings.yawLeft
+                    )} /{" "}
+                    {formatBindings(
+                        bindings.yawRight
+                    )}
+                </span>
                 Yaw
             </div>
 
             <div>
-    <span
-        style={{
-            display: "inline-block",
-            width: "120px",
-        }}
-    >
-        {formatBindings(bindings.throttleUp)} /{" "}
-        {formatBindings(bindings.throttleDown)}
-    </span>
+                <span
+                    style={{
+                        display:
+                            "inline-block",
+                        width: "120px",
+                    }}
+                >
+                    {formatBindings(
+                        bindings.throttleUp
+                    )} /{" "}
+                    {formatBindings(
+                        bindings.throttleDown
+                    )}
+                </span>
                 Throttle
             </div>
 
@@ -127,38 +153,47 @@ export function ScenarioPanel({
                     marginTop: "6px",
                 }}
             >
-    <span
-        style={{
-            display: "inline-block",
-            width: "120px",
-        }}
-    >
-        {formatBindings(bindings.fireGun)}
-    </span>
+                <span
+                    style={{
+                        display:
+                            "inline-block",
+                        width: "120px",
+                    }}
+                >
+                    {formatBindings(
+                        bindings.fireGun
+                    )}
+                </span>
                 Gun
             </div>
 
             <div>
-    <span
-        style={{
-            display: "inline-block",
-            width: "120px",
-        }}
-    >
-        {formatBindings(bindings.launchMissile)}
-    </span>
+                <span
+                    style={{
+                        display:
+                            "inline-block",
+                        width: "120px",
+                    }}
+                >
+                    {formatBindings(
+                        bindings.launchMissile
+                    )}
+                </span>
                 Missile
             </div>
 
             <div>
-    <span
-        style={{
-            display: "inline-block",
-            width: "120px",
-        }}
-    >
-        {formatBindings(bindings.nextTarget)}
-    </span>
+                <span
+                    style={{
+                        display:
+                            "inline-block",
+                        width: "120px",
+                    }}
+                >
+                    {formatBindings(
+                        bindings.nextTarget
+                    )}
+                </span>
                 Change Target
             </div>
 
@@ -168,14 +203,17 @@ export function ScenarioPanel({
                     color: "rgba(255, 255, 255, 0.6)",
                 }}
             >
-    <span
-        style={{
-            display: "inline-block",
-            width: "120px",
-        }}
-    >
-        {formatBindings(bindings.exit)}
-    </span>
+                <span
+                    style={{
+                        display:
+                            "inline-block",
+                        width: "120px",
+                    }}
+                >
+                    {formatBindings(
+                        bindings.exit
+                    )}
+                </span>
                 Mission Select
             </div>
 
@@ -184,72 +222,19 @@ export function ScenarioPanel({
                     color: "rgba(255, 255, 255, 0.6)",
                 }}
             >
-    <span
-        style={{
-            display: "inline-block",
-            width: "120px",
-        }}
-    >
-        {formatBindings(bindings.reset)}
-    </span>
+                <span
+                    style={{
+                        display:
+                            "inline-block",
+                        width: "120px",
+                    }}
+                >
+                    {formatBindings(
+                        bindings.reset
+                    )}
+                </span>
                 Restart Mission
             </div>
         </div>
     );
-}
-
-function formatBinding(code: string) {
-    switch (code) {
-        case "KeyW":
-            return "W";
-
-        case "KeyS":
-            return "S";
-
-        case "KeyA":
-            return "A";
-
-        case "KeyD":
-            return "D";
-
-        case "KeyQ":
-            return "Q";
-
-        case "KeyE":
-            return "E";
-
-        case "KeyF":
-            return "F";
-
-        case "KeyR":
-            return "R";
-
-        case "ShiftLeft":
-        case "ShiftRight":
-            return "SHIFT";
-
-        case "ControlLeft":
-        case "ControlRight":
-            return "CTRL";
-
-        case "Space":
-            return "SPACE";
-
-        case "Tab":
-            return "TAB";
-
-        case "Escape":
-            return "ESC";
-
-        default:
-            return code;
-    }
-}
-
-function formatBindings(
-    bindings: string[]
-) {
-    return [...new Set(
-        bindings.map(formatBinding)
-    )].join(" / ");
 }

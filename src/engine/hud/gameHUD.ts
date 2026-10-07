@@ -25,10 +25,9 @@ export class GameHud {
 
     private readonly radarSize = 512;
 
-    private radar: HTMLDivElement;
-    private radarLabel: HTMLDivElement;
-    private radarPlayer: HTMLDivElement;
-
+    private radar!: HTMLDivElement;
+    private radarLabel!: HTMLDivElement;
+    private radarPlayer!: HTMLDivElement;
     private radarContacts: {
         enemy: Enemy;
         marker: HTMLDivElement;
