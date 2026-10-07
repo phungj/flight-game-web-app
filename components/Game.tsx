@@ -2559,13 +2559,13 @@ export default function Game({
             // Victory
             // ------------------------------------------------
 
+            const enemyUnits =
+                enemies.filter(enemy => enemy.team === "enemy");
+
             if (
                 !won &&
-                enemies.length > 0 &&
-                enemies.every(
-                    enemy =>
-                        !enemy.alive
-                )
+                enemyUnits.length > 0 &&
+                enemyUnits.every(enemy => !enemy.alive)
             ) {
                 setWon(true);
             }
