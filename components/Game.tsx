@@ -48,6 +48,7 @@ import {
 import {ObjectEnemy} from "@/src/engine/enemy/objectEnemy";
 import {ScenarioPanel} from "@/components/ScenarioPanel";
 import {createLevelObject, objectMaterials} from "@/src/engine/createLevelObject";
+import {GameHud} from "@/src/engine/hud/gameHUD";
 
 type GameProps = {
     level: LevelDefinition;
@@ -85,6 +86,8 @@ export default function Game({
         if (!container) {
             return;
         }
+
+        const hud = new GameHud(containerRef.current);
 
         // --------------------------------------------------
         // Scene
@@ -450,6 +453,10 @@ export default function Game({
             ),
         ];
 
+        for (const enemy of enemies) {
+            hud.addTarget(enemy);
+        }
+
         // --------------------------------------------------
         // Fighter AI
         // --------------------------------------------------
@@ -758,268 +765,7 @@ export default function Game({
 
         let playerHasDied = false;
 
-        // --------------------------------------------------
-        // Reticle
-        // --------------------------------------------------
 
-        const reticle =
-            document.createElement(
-                "div"
-            );
-
-        reticle.style.position =
-            "fixed";
-
-        reticle.style.left =
-            "50%";
-
-        reticle.style.top =
-            "50%";
-
-        reticle.style.width =
-            "18px";
-
-        reticle.style.height =
-            "18px";
-
-        reticle.style.border =
-            "2px solid white";
-
-        reticle.style.transform =
-            "translate(-50%, -50%)";
-
-        reticle.style.pointerEvents =
-            "none";
-
-        document.body.appendChild(
-            reticle
-        );
-
-        // --------------------------------------------------
-        // Lead indicator
-        // --------------------------------------------------
-
-        const leadIndicator =
-            document.createElement(
-                "div"
-            );
-
-        leadIndicator.style.position =
-            "fixed";
-
-        leadIndicator.style.width =
-            "30px";
-
-        leadIndicator.style.height =
-            "30px";
-
-        leadIndicator.style.border =
-            "2px solid white";
-
-        leadIndicator.style.borderRadius =
-            "50%";
-
-        leadIndicator.style.transform =
-            "translate(-50%, -50%)";
-
-        leadIndicator.style.pointerEvents =
-            "none";
-
-        leadIndicator.style.display =
-            "none";
-
-        leadIndicator.style.boxSizing =
-            "border-box";
-
-        document.body.appendChild(
-            leadIndicator
-        );
-
-        // --------------------------------------------------
-        // Missile warning
-        // --------------------------------------------------
-
-        const missileWarning =
-            document.createElement(
-                "div"
-            );
-
-        missileWarning.style.position =
-            "fixed";
-
-        missileWarning.style.left =
-            "50%";
-
-        missileWarning.style.top =
-            "80%";
-
-        missileWarning.style.transform =
-            "translate(-50%, -50%)";
-
-        missileWarning.style.color =
-            "red";
-
-        missileWarning.style.fontFamily =
-            "monospace";
-
-        missileWarning.style.fontSize =
-            "24px";
-
-        missileWarning.style.fontWeight =
-            "bold";
-
-        missileWarning.style.textAlign =
-            "center";
-
-        missileWarning.style.pointerEvents =
-            "none";
-
-        missileWarning.style.zIndex =
-            "20";
-
-        missileWarning.style.textShadow =
-            "0 0 4px black";
-
-        missileWarning.style.display =
-            "none";
-
-        document.body.appendChild(
-            missileWarning
-        );
-
-        const missileDirections:
-            HTMLDivElement[] =
-            [];
-
-        function createMissileDirection() {
-            const missileDirection =
-                document.createElement(
-                    "div"
-                );
-
-            missileDirection.style.position =
-                "fixed";
-
-            missileDirection.style.left =
-                "50%";
-
-            missileDirection.style.top =
-                "50%";
-
-            missileDirection.style.width =
-                "0";
-
-            missileDirection.style.height =
-                "0";
-
-            missileDirection.style.borderLeft =
-                "12px solid transparent";
-
-            missileDirection.style.borderRight =
-                "12px solid transparent";
-
-            missileDirection.style.borderBottom =
-                "24px solid red";
-
-            missileDirection.style.transformOrigin =
-                "50% 50%";
-
-            missileDirection.style.pointerEvents =
-                "none";
-
-            missileDirection.style.zIndex =
-                "20";
-
-            missileDirection.style.filter =
-                "drop-shadow(0 0 3px black)";
-
-            missileDirection.style.display =
-                "none";
-
-            document.body.appendChild(
-                missileDirection
-            );
-
-            return missileDirection;
-        }
-
-        function ensureMissileDirections(
-            count: number
-        ) {
-            while (
-                missileDirections.length <
-                count
-                ) {
-                missileDirections.push(
-                    createMissileDirection()
-                );
-            }
-        }
-
-        // --------------------------------------------------
-        // Target HUDs
-        // --------------------------------------------------
-
-        const targetHuds =
-            new Map<
-                Enemy,
-                HTMLDivElement
-            >();
-
-        for (
-            const enemy of
-            enemies
-            ) {
-            const hud =
-                document.createElement(
-                    "div"
-                );
-
-            hud.style.position =
-                "fixed";
-
-            hud.style.zIndex =
-                "10";
-
-            hud.style.color =
-                enemy.team ===
-                "friendly"
-                    ? "blue"
-                    : "red";
-
-            hud.style.fontFamily =
-                "monospace";
-
-            hud.style.fontSize =
-                "18px";
-
-            hud.style.fontWeight =
-                "bold";
-
-            hud.style.textAlign =
-                "center";
-
-            hud.style.whiteSpace =
-                "pre";
-
-            hud.style.pointerEvents =
-                "none";
-
-            hud.style.textShadow =
-                "0 0 4px black";
-
-            hud.style.display =
-                "none";
-
-            document.body.appendChild(
-                hud
-            );
-
-            targetHuds.set(
-                enemy,
-                hud
-            );
-        }
 
         // --------------------------------------------------
         // Target box
@@ -1522,30 +1268,7 @@ export default function Game({
             gunFiring = false;
             locked = false;
 
-            reticle.style.display =
-                "none";
-
-            leadIndicator.style.display =
-                "none";
-
-            missileWarning.style.display =
-                "none";
-
-            for (
-                const missileDirection of
-                missileDirections
-                ) {
-                missileDirection.style.display =
-                    "none";
-            }
-
-            for (
-                const hud of
-                targetHuds.values()
-                ) {
-                hud.style.display =
-                    "none";
-            }
+            hud.hide();
 
             targetBox.style.display =
                 "none";
@@ -1610,127 +1333,7 @@ export default function Game({
             }
         }
 
-        // --------------------------------------------------
-        // Target HUD
-        // --------------------------------------------------
 
-        function updateTargetHud(
-            hud: HTMLDivElement,
-            targetEnemy: Enemy,
-            name: string,
-            selected: boolean,
-            targetLocked: boolean
-        ) {
-            const projected =
-                targetEnemy.position
-                    .clone()
-                    .project(camera);
-
-            const halfWidth =
-                window.innerWidth / 2;
-
-            const halfHeight =
-                window.innerHeight / 2;
-
-            const screenX =
-                projected.x *
-                halfWidth +
-                halfWidth;
-
-            const screenY =
-                -projected.y *
-                halfHeight +
-                halfHeight;
-
-            const onScreen =
-                projected.z >= -1 &&
-                projected.z <= 1 &&
-                screenX >= 0 &&
-                screenX <=
-                window.innerWidth &&
-                screenY >= 0 &&
-                screenY <=
-                window.innerHeight;
-
-            const distance =
-                targetEnemy.position.distanceTo(
-                    player.position
-                );
-
-            hud.style.display =
-                "block";
-
-            if (onScreen) {
-                hud.style.left =
-                    `${screenX}px`;
-
-                hud.style.top =
-                    `${screenY}px`;
-
-                hud.style.transform =
-                    "translate(-50%, -50%)";
-
-                if (
-                    selected &&
-                    targetLocked
-                ) {
-                    hud.textContent =
-                        `◇ LOCK ${name}\n${distance.toFixed(
-                            0
-                        )}`;
-                } else {
-                    hud.textContent =
-                        `◇ ${name}\n${distance.toFixed(
-                            0
-                        )}`;
-                }
-            } else {
-                const dx =
-                    screenX -
-                    halfWidth;
-
-                const dy =
-                    screenY -
-                    halfHeight;
-
-                const angle =
-                    Math.atan2(
-                        dy,
-                        dx
-                    );
-
-                const margin =
-                    40;
-
-                const radius =
-                    Math.min(
-                        halfWidth,
-                        halfHeight
-                    ) - margin;
-
-                const markerX =
-                    halfWidth +
-                    Math.cos(angle) *
-                    radius;
-
-                const markerY =
-                    halfHeight +
-                    Math.sin(angle) *
-                    radius;
-
-                hud.style.left =
-                    `${markerX}px`;
-
-                hud.style.top =
-                    `${markerY}px`;
-
-                hud.textContent =
-                    selected &&
-                    targetLocked
-                        ? "◇ LOCK"
-                        : `◇ ${name}`;
-            }
-        }
 
         // --------------------------------------------------
         // Radar update
@@ -3302,25 +2905,18 @@ export default function Game({
                             ) *
                             window.innerHeight;
 
-                        leadIndicator.style.left =
-                            `${screenX}px`;
-
-                        leadIndicator.style.top =
-                            `${screenY}px`;
-
-                        leadIndicator.style.display =
-                            "block";
+                        hud.showLeadIndicator(
+                            screenX,
+                            screenY
+                        );
                     } else {
-                        leadIndicator.style.display =
-                            "none";
+                        hud.hideLeadIndicator();
                     }
                 } else {
-                    leadIndicator.style.display =
-                        "none";
+                    hud.hideLeadIndicator();
                 }
             } else {
-                leadIndicator.style.display =
-                    "none";
+                hud.hideLeadIndicator();
             }
 
             // ------------------------------------------------
@@ -3605,130 +3201,20 @@ export default function Game({
                 }
             }
 
-            // ------------------------------------------------
-// Missile warning
-// ------------------------------------------------
-
             const incomingMissiles =
                 enemyMissiles.filter(
                     missile =>
                         missile.alive &&
-                        missile.target ===
-                        player.position
+                        missile.target === player.position
                 );
 
-            ensureMissileDirections(
-                incomingMissiles.length
+            hud.updateMissileWarning(
+                incomingMissiles.map(
+                    missile => missile.position
+                ),
+                player.position,
+                player.quaternion
             );
-
-            if (
-                player.alive &&
-                incomingMissiles.length >
-                0
-            ) {
-                missileWarning.style.display =
-                    "block";
-
-                missileWarning.style.color =
-                    "red";
-
-                missileWarning.textContent =
-                    incomingMissiles.length ===
-                    1
-                        ? `MISSILE`
-                        : `MISSILES × ${incomingMissiles.length}`;
-
-                const centerX =
-                    window.innerWidth /
-                    2;
-
-                const centerY =
-                    window.innerHeight /
-                    2;
-
-                const radius =
-                    Math.min(
-                        centerX,
-                        centerY
-                    ) *
-                    0.7;
-
-                for (
-                    let i = 0;
-                    i <
-                    missileDirections.length;
-                    i++
-                ) {
-                    const arrow =
-                        missileDirections[i];
-
-                    const missile =
-                        incomingMissiles[i];
-
-                    if (!missile) {
-                        arrow.style.display =
-                            "none";
-
-                        continue;
-                    }
-
-                    const toMissile =
-                        missile.position
-                            .clone()
-                            .sub(
-                                player.position
-                            )
-                            .normalize();
-
-                    const localMissile =
-                        toMissile
-                            .clone()
-                            .applyQuaternion(
-                                player.quaternion
-                                    .clone()
-                                    .invert()
-                            );
-
-                    const angle =
-                        Math.atan2(
-                            localMissile.x,
-                            -localMissile.z
-                        );
-
-                    const x =
-                        centerX +
-                        Math.sin(angle) *
-                        radius;
-
-                    const y =
-                        centerY -
-                        Math.cos(angle) *
-                        radius;
-
-                    arrow.style.left =
-                        `${x}px`;
-
-                    arrow.style.top =
-                        `${y}px`;
-
-                    arrow.style.transform =
-                        `translate(-50%, -50%) rotate(${angle}rad)`;
-
-                    arrow.style.display =
-                        "block";
-                }
-            } else {
-                missileWarning.style.display =
-                    "none";
-
-                for (
-                    const arrow of
-                    missileDirections
-                    ) {
-                    arrow.style.display =
-                        "none";
-                }
-            }
 
             // ------------------------------------------------
             // Explosions
@@ -3854,9 +3340,9 @@ export default function Game({
                 chasePlane.quaternion
             );
 
-            // ------------------------------------------------
+            // --------------------------------------------------
 // Target HUDs
-// ------------------------------------------------
+// --------------------------------------------------
 
             for (
                 const targetEntry of
@@ -3865,32 +3351,23 @@ export default function Game({
                 const enemy =
                     targetEntry.enemy;
 
-                const hud =
-                    targetHuds.get(
-                        enemy
-                    );
-
-                if (!hud) {
-                    continue;
-                }
-
                 if (
                     player.alive &&
                     enemy.alive
                 ) {
-                    updateTargetHud(
-                        hud,
+                    hud.updateTargetHud(
                         enemy,
                         targetEntry.name,
-                        target?.enemy ===
-                        enemy,
+                        target?.enemy === enemy,
                         locked &&
-                        target?.enemy ===
-                        enemy
+                        target?.enemy === enemy,
+                        camera,
+                        player.position
                     );
                 } else {
-                    hud.style.display =
-                        "none";
+                    hud.hideTargetHud(
+                        enemy
+                    );
                 }
             }
 
@@ -4146,22 +3623,8 @@ export default function Game({
                 handleKeyUp
             );
 
-            for (
-                const hud of
-                targetHuds.values()
-                ) {
-                hud.remove();
-            }
+            hud.destroy()
 
-            reticle.remove();
-            leadIndicator.remove();
-            missileWarning.remove();
-            for (
-                const missileDirection of
-                missileDirections
-                ) {
-                missileDirection.remove();
-            }
             targetBox.remove();
             radar.remove();
 
