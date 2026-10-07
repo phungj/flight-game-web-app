@@ -1,9 +1,13 @@
+import {ControlBindings} from "@/src/engine/controls";
+
 type ScenarioPanelProps = {
     description: string;
+    bindings: ControlBindings;
 };
 
 export function ScenarioPanel({
                                   description,
+                                  bindings,
                               }: ScenarioPanelProps) {
     return (
         <div
@@ -66,59 +70,186 @@ export function ScenarioPanel({
             >
                 CONTROLS
             </div>
-
             <div>
-                W / S &nbsp; Pitch
+    <span
+        style={{
+            display: "inline-block",
+            width: "120px",
+        }}
+    >
+        {formatBindings(bindings.pitchUp)} /{" "}
+        {formatBindings(bindings.pitchDown)}
+    </span>
+                Pitch
             </div>
 
             <div>
-                A / D &nbsp; Roll
+    <span
+        style={{
+            display: "inline-block",
+            width: "120px",
+        }}
+    >
+        {formatBindings(bindings.rollLeft)} /{" "}
+        {formatBindings(bindings.rollRight)}
+    </span>
+                Roll
             </div>
 
             <div>
-                Q / E &nbsp; Yaw
+    <span
+        style={{
+            display: "inline-block",
+            width: "120px",
+        }}
+    >
+        {formatBindings(bindings.yawLeft)} /{" "}
+        {formatBindings(bindings.yawRight)}
+    </span>
+                Yaw
             </div>
 
             <div>
-                SHIFT / CTRL &nbsp; Throttle
+    <span
+        style={{
+            display: "inline-block",
+            width: "120px",
+        }}
+    >
+        {formatBindings(bindings.throttleUp)} /{" "}
+        {formatBindings(bindings.throttleDown)}
+    </span>
+                Throttle
             </div>
 
             <div
                 style={{
-                    marginTop:
-                        "6px",
+                    marginTop: "6px",
                 }}
             >
-                F &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Gun
+    <span
+        style={{
+            display: "inline-block",
+            width: "120px",
+        }}
+    >
+        {formatBindings(bindings.fireGun)}
+    </span>
+                Gun
             </div>
 
             <div>
-                SPACE &nbsp; Missile
+    <span
+        style={{
+            display: "inline-block",
+            width: "120px",
+        }}
+    >
+        {formatBindings(bindings.launchMissile)}
+    </span>
+                Missile
             </div>
 
             <div>
-                TAB &nbsp;&nbsp;&nbsp; Change Target
+    <span
+        style={{
+            display: "inline-block",
+            width: "120px",
+        }}
+    >
+        {formatBindings(bindings.nextTarget)}
+    </span>
+                Change Target
             </div>
 
             <div
                 style={{
-                    marginTop:
-                        "6px",
-                    color:
-                        "rgba(255, 255, 255, 0.6)",
+                    marginTop: "6px",
+                    color: "rgba(255, 255, 255, 0.6)",
                 }}
             >
-                ESC &nbsp;&nbsp;&nbsp; Mission Select
+    <span
+        style={{
+            display: "inline-block",
+            width: "120px",
+        }}
+    >
+        {formatBindings(bindings.exit)}
+    </span>
+                Mission Select
             </div>
 
             <div
                 style={{
-                    color:
-                        "rgba(255, 255, 255, 0.6)",
+                    color: "rgba(255, 255, 255, 0.6)",
                 }}
             >
-                R &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Restart Mission
+    <span
+        style={{
+            display: "inline-block",
+            width: "120px",
+        }}
+    >
+        {formatBindings(bindings.reset)}
+    </span>
+                Restart Mission
             </div>
         </div>
     );
+}
+
+function formatBinding(code: string) {
+    switch (code) {
+        case "KeyW":
+            return "W";
+
+        case "KeyS":
+            return "S";
+
+        case "KeyA":
+            return "A";
+
+        case "KeyD":
+            return "D";
+
+        case "KeyQ":
+            return "Q";
+
+        case "KeyE":
+            return "E";
+
+        case "KeyF":
+            return "F";
+
+        case "KeyR":
+            return "R";
+
+        case "ShiftLeft":
+        case "ShiftRight":
+            return "SHIFT";
+
+        case "ControlLeft":
+        case "ControlRight":
+            return "CTRL";
+
+        case "Space":
+            return "SPACE";
+
+        case "Tab":
+            return "TAB";
+
+        case "Escape":
+            return "ESC";
+
+        default:
+            return code;
+    }
+}
+
+function formatBindings(
+    bindings: string[]
+) {
+    return [...new Set(
+        bindings.map(formatBinding)
+    )].join(" / ");
 }
