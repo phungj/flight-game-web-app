@@ -88,7 +88,7 @@ export class GameHud {
             document.createElement("div");
 
         leadIndicator.style.position =
-            "fixed";
+            "absolute";
 
         leadIndicator.style.width =
             "30px";
@@ -149,7 +149,7 @@ export class GameHud {
             document.createElement("div");
 
         missileWarning.style.position =
-            "fixed";
+            "absolute";
 
         missileWarning.style.left =
             "50%";
@@ -203,7 +203,7 @@ export class GameHud {
             document.createElement("div");
 
         missileDirection.style.position =
-            "fixed";
+            "absolute";
 
         missileDirection.style.left =
             "50%";
@@ -262,17 +262,17 @@ export class GameHud {
     }
 
     updateMissileWarning(
-        missiles: THREE.Vector3[],
+        missilePositions: THREE.Vector3[],
         playerPosition: THREE.Vector3,
         playerQuaternion: THREE.Quaternion
     ) {
-        if (missiles.length === 0) {
+        if (missilePositions.length === 0) {
             this.hideMissileWarning();
             return;
         }
 
         this.ensureMissileDirections(
-            missiles.length
+            missilePositions.length
         );
 
         this.missileWarning.style.display =
@@ -282,9 +282,9 @@ export class GameHud {
             "red";
 
         this.missileWarning.textContent =
-            missiles.length === 1
+            missilePositions.length === 1
                 ? "MISSILE"
-                : `MISSILES × ${missiles.length}`;
+                : `MISSILES × ${missilePositions.length}`;
 
         const centerX =
             window.innerWidth / 2;
@@ -307,7 +307,7 @@ export class GameHud {
                 this.missileDirections[i];
 
             const missile =
-                missiles[i];
+                missilePositions[i];
 
             if (!missile) {
                 arrow.style.display =
@@ -365,6 +365,10 @@ export class GameHud {
         this.missileWarning.style.display =
             "none";
 
+        this.hideMissileDirections();
+    }
+
+    private hideMissileDirections() {
         for (
             const arrow of
             this.missileDirections
@@ -383,7 +387,7 @@ export class GameHud {
             );
 
         hud.style.position =
-            "fixed";
+            "absolute";
 
         hud.style.zIndex =
             "10";
@@ -425,32 +429,6 @@ export class GameHud {
         return hud;
     }
 
-    showTargetHud(
-        enemy: Enemy,
-        x: number,
-        y: number,
-        text: string
-    ) {
-        const hud =
-            this.targetHuds.get(enemy);
-
-        if (!hud) {
-            return;
-        }
-
-        hud.style.left =
-            `${x}px`;
-
-        hud.style.top =
-            `${y}px`;
-
-        hud.textContent =
-            text;
-
-        hud.style.display =
-            "block";
-    }
-
     hideTargetHud(
         enemy: Enemy
     ) {
@@ -469,6 +447,21 @@ export class GameHud {
         this.targetHuds.set(
             enemy,
             this.createTargetHud(enemy)
+        );
+    }
+
+    removeTarget(enemy: Enemy) {
+        const hud =
+            this.targetHuds.get(enemy);
+
+        if (!hud) {
+            return;
+        }
+
+        hud.remove();
+
+        this.targetHuds.delete(
+            enemy
         );
     }
 
